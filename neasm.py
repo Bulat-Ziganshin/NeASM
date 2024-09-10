@@ -7,3 +7,50 @@ def asm(*args):
 def asm_finish():
     for cmd in asmx:
         print(cmd[0], ','.join(cmd[1:]))
+
+
+### Register names ##############################
+
+reg = []
+xmm = []
+ymm = []
+for n in range(16):
+    r_n = "r" + str(n)
+    xmm_n = "xmm" + str(n)
+    ymm_n = "ymm" + str(n)
+
+    reg.append(r_n)
+    xmm.append(xmm_n)
+    ymm.append(ymm_n)
+
+reg[0:8] = ["rax", "rcx", "rdx", "rbx", "rsi", "rdi", "rbp", "rsp"]
+
+# Auto-generated code
+rax = reg[0];  r0 = reg[0];  xmm0 = xmm[0];  ymm0 = ymm[0]
+rcx = reg[1];  r1 = reg[1];  xmm1 = xmm[1];  ymm1 = ymm[1]
+rdx = reg[2];  r2 = reg[2];  xmm2 = xmm[2];  ymm2 = ymm[2]
+rbx = reg[3];  r3 = reg[3];  xmm3 = xmm[3];  ymm3 = ymm[3]
+rsi = reg[4];  r4 = reg[4];  xmm4 = xmm[4];  ymm4 = ymm[4]
+rdi = reg[5];  r5 = reg[5];  xmm5 = xmm[5];  ymm5 = ymm[5]
+rbp = reg[6];  r6 = reg[6];  xmm6 = xmm[6];  ymm6 = ymm[6]
+rsp = reg[7];  r7 = reg[7];  xmm7 = xmm[7];  ymm7 = ymm[7]
+r8 = reg[8];  r8 = reg[8];  xmm8 = xmm[8];  ymm8 = ymm[8]
+r9 = reg[9];  r9 = reg[9];  xmm9 = xmm[9];  ymm9 = ymm[9]
+r10 = reg[10];  r10 = reg[10];  xmm10 = xmm[10];  ymm10 = ymm[10]
+r11 = reg[11];  r11 = reg[11];  xmm11 = xmm[11];  ymm11 = ymm[11]
+r12 = reg[12];  r12 = reg[12];  xmm12 = xmm[12];  ymm12 = ymm[12]
+r13 = reg[13];  r13 = reg[13];  xmm13 = xmm[13];  ymm13 = ymm[13]
+r14 = reg[14];  r14 = reg[14];  xmm14 = xmm[14];  ymm14 = ymm[14]
+r15 = reg[15];  r15 = reg[15];  xmm15 = xmm[15];  ymm15 = ymm[15]
+
+if __name__ == "__main__":
+    for n in range(16):
+        r_n = "r" + str(n)
+        xmm_n = "xmm" + str(n)
+        ymm_n = "ymm" + str(n)
+
+        print(reg[n] + " = reg[" + str(n) + "];  "
+            + r_n + " = reg[" + str(n) + "];  "
+            + xmm_n + " = xmm[" + str(n) + "];  "
+            + ymm_n + " = ymm[" + str(n) + "]")
+
