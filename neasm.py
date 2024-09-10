@@ -1,3 +1,4 @@
+import sys
 
 asmx = []
 
@@ -7,6 +8,32 @@ def asm(*args):
 def asm_finish():
     for cmd in asmx:
         print(cmd[0], ','.join(cmd[1:]))
+
+
+### Preprocessor ################################
+
+def preprocess_file(filename):
+    with open(filename, encoding="utf-8") as f:
+        preprocess(f.read())
+
+def preprocess(text):
+    program = []
+
+    for line in text.splitlines():
+        if (line=="")  or  (line[0] == '%'):
+            program.append(line[1:])
+        else:
+            spaces = len(line) - len(line.lstrip())
+            program.append(line[0:spaces] + "asm(\"" + line[spaces:] + "\")")
+
+    print('# The executed Python code:')
+    print('#')
+    for line in program:
+        print('# ' + line)
+    print()
+
+    exec('\n'.join(program))
+    asm_finish()
 
 
 ### Register names ##############################
@@ -44,13 +71,15 @@ r14 = reg[14];  r14 = reg[14];  xmm14 = xmm[14];  ymm14 = ymm[14]
 r15 = reg[15];  r15 = reg[15];  xmm15 = xmm[15];  ymm15 = ymm[15]
 
 if __name__ == "__main__":
-    for n in range(16):
-        r_n = "r" + str(n)
-        xmm_n = "xmm" + str(n)
-        ymm_n = "ymm" + str(n)
+    if len(sys.argv) == 1:
+        for n in range(16):
+            r_n = "r" + str(n)
+            xmm_n = "xmm" + str(n)
+            ymm_n = "ymm" + str(n)
 
-        print(reg[n] + " = reg[" + str(n) + "];  "
-            + r_n + " = reg[" + str(n) + "];  "
-            + xmm_n + " = xmm[" + str(n) + "];  "
-            + ymm_n + " = ymm[" + str(n) + "]")
-
+            print(reg[n] + " = reg[" + str(n) + "];  "
+                + r_n + " = reg[" + str(n) + "];  "
+                + xmm_n + " = xmm[" + str(n) + "];  "
+                + ymm_n + " = ymm[" + str(n) + "]")
+    else:
+        preprocess_file(sys.argv[1])
