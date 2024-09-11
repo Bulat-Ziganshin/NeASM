@@ -10,14 +10,15 @@ from registers import *
 def preprocess(text, title = ''):
     program = []
     for line in text.splitlines():
-        if (line=="")  or  (line[0] == '%'):
-            program.append(line[1:])
+        # Copy spaces, starting the line, intact to preserve the indentation structure
+        code = line.lstrip()
+        spaces = line[0 : len(line) - len(code)]
+        if (code=="")  or  (code[0] == '%'):
+            program.append(spaces + code[1:])
         else:
-            code = line.lstrip()
-            spaces = len(line) - len(code)
             # Allow to use "{expr}" syntax to evaluate Python expressions inside assembler code
-            code = re.sub(r'[{](.+?)[}]', r'" + \1 + "', code)
-            program.append(line[0:spaces] + "asm(\"" + code + "\")")
+            code = re.sub(r'[{](.+?)[}]', r'" + str(\1) + "', code)
+            program.append(spaces + "asm(\"" + code + "\")")
 
     print(title + '# The executed Python code:')
     print('#')

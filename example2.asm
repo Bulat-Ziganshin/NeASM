@@ -2,11 +2,44 @@
 #
 # The executed Python code:
 #
+# # This is an example of using NeASM as Python-based preprocessor
+# #   for regular assembler code.
+# # Preprocess this file by running `nepp.py example2.neasm >example2.asm`
+#
 # for n in range(4):
-#   asm("paddq " + xmm[n+1] + ", " + xmm[n] + "")
+#   asm("paddq xmm" + str(n+1) + ", xmm" + str(n) + "")
+# asm("#")
+# for n in range(8,12):
+#   start_new_stream()
+#   asm("mov r" + str(n) + ", [ebp+" + str(n*8) + "]")
+#   asm("vmovdqu ymm" + str(n) + ", [r" + str(n) + "]")
+#   asm("vpcmpeqb ymm" + str(n) + ", ymm0")
+#   asm("vpmovmskb r" + str(n) + ", ymm" + str(n) + "")
+#   asm("mov [ebp+" + str(n*8) + "], r" + str(n) + "")
+# interleave_streams()
 
 paddq xmm1, xmm0
 paddq xmm2, xmm1
 paddq xmm3, xmm2
 paddq xmm4, xmm3
-
+#
+mov r8, [ebp+64]
+mov r9, [ebp+72]
+mov r10, [ebp+80]
+mov r11, [ebp+88]
+vmovdqu ymm8, [r8]
+vmovdqu ymm9, [r9]
+vmovdqu ymm10, [r10]
+vmovdqu ymm11, [r11]
+vpcmpeqb ymm8, ymm0
+vpcmpeqb ymm9, ymm0
+vpcmpeqb ymm10, ymm0
+vpcmpeqb ymm11, ymm0
+vpmovmskb r8, ymm8
+vpmovmskb r9, ymm9
+vpmovmskb r10, ymm10
+vpmovmskb r11, ymm11
+mov [ebp+64], r8
+mov [ebp+72], r9
+mov [ebp+80], r10
+mov [ebp+88], r11
