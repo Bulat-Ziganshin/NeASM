@@ -1,3 +1,5 @@
+# This is an example of using NeASM as Python library
+
 import neasm
 from neasm import asm
 from registers import *

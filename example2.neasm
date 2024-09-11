@@ -1,2 +1,6 @@
+%# This is an example of using NeASM as Python-based preprocessor
+%#   for regular assembler code.
+%# Preprocess this file by running `nepp.py example2.neasm >example2.asm`
+
 %for n in range(4):
   paddq {xmm[n+1]}, {xmm[n]}

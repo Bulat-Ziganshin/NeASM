@@ -29,7 +29,7 @@ The features that I currently plan to implement:
 
 # ASM code preprocessing
 
-You can preprocess an ASM source file with `python.exe preprocessor.py example2.neasm >example2.asm`.
+You can preprocess an ASM source file with `nepp.py example2.neasm >example2.asm`.
 
 The preprocessor translates an ASM code into a Python program that generates
 the same ASM code using calls to the "asm" function from NeASM.
@@ -42,7 +42,7 @@ E.g., this code (see [example2.neasm](example2.neasm)):
   paddq {xmm[n+1]}, {xmm[n]}
 ```
 
-is auto-translated into Python code:
+is auto-translated into this Python code:
 ```python
 for n in range(4):
   asm("paddq " + xmm[n+1] + ", " + xmm[n] + "")

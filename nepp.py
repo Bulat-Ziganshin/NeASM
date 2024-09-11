@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 ### Preprocessor ################################
 
 import sys, re
@@ -35,6 +37,6 @@ def preprocess_file(filename):
 
 if __name__ == "__main__":
     if len(sys.argv) == 1:
-        print("Usage: preprocessor input.neasm >output.asm")
+        print("Usage: nepp.py input.neasm >output.asm")
     else:
         preprocess_file(sys.argv[1])
