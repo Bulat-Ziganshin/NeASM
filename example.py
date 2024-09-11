@@ -1,3 +1,4 @@
+import neasm
 from neasm import *
 
 asm("add", rax, rbx)
@@ -7,4 +8,4 @@ for n in range(4):
     asm("paddq", xmm[n+1], xmm[n])
 
 
-asm_finish()
+neasm.finish()
