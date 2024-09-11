@@ -1,5 +1,6 @@
 import neasm
-from neasm import *
+from neasm import asm
+from registers import *
 
 asm("add", rax, rbx)
 asm("sub", rax, rbx)
