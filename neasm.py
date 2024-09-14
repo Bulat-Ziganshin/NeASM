@@ -3,9 +3,11 @@ import registers
 
 # Start from scratch
 def clearall():
+    global cmd_lists, equ_dict
     # Here we keep all assembler statements issued by the program
-    global cmd_lists
     cmd_lists = [[]]
+    # Here we keep all EQU definitions
+    equ_dict = dict()
     clear_regs()
 
 # Add one more statement to the last command list
@@ -13,12 +15,25 @@ def asm(*args):
     global cmd_lists
     cmd_lists[-1].append(args)
 
+# Add definition to the EQU list
+def equ(word, replacement):
+    global equ_dict
+    equ_dict[word] = replacement
+
 # Print all accumulated ASM statements and clear the list
 def flush():
-    global cmd_lists
-    for list in cmd_lists:
-        for cmd in list:
-            print(cmd[0], ','.join(cmd[1:]))
+    # Replace a word with its definition stored in equ_dict
+    def replace_equ(matchobj):
+        word = matchobj.group(0)
+        return equ_dict.get(word, word)
+
+    for one_list in cmd_lists:
+        for one_line in one_list:
+            cmd = one_line[0] + " " + (",".join(one_line[1:]))
+            re_word = r'\w[\w\d]*'
+            cmd = re.sub(re_word, replace_equ, cmd)
+            print(cmd)
+
     clearall()
 
 

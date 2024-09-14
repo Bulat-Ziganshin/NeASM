@@ -35,4 +35,9 @@ for n in range(8,12):
 neasm.interleave_streams()
 free_reg(*pos)
 
+asm("")
+neasm.equ("dict", "rax")
+neasm.equ("pos", "rbx")
+asm("mov rdx, [dict+pos]")
+
 neasm.flush()
