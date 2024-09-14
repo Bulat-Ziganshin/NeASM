@@ -28,8 +28,15 @@ def preprocess(text, title = ''):
         if python_mode ^ has_prefix:
             program.append(spaces + cmd)
         else:
-            # Replace "{expr}" occurences with results of `expr` evaluated as Python expression
+            # Replace every "{expr}" occurence with result of `expr` evaluated as Python expression
             cmd = re.sub(r'[{](.+?)[}]', r'" + str(\1) + "', cmd)
+            # Execute EQU meta-command
+            matchobj = re.fullmatch(r'([\S]+)\s+([\S]+)\s+(.*)\s*', cmd)
+            if matchobj:
+                id,op,param = matchobj.group(1,2,3)
+                if op.lower()=='equ':
+                    equ(id,param)
+                    cmd = cmt_char + ' ' + cmd
             # Output the final asm command
             program.append(spaces + "asm(\"" + cmd + "\")")
 

@@ -22,7 +22,7 @@ def asm(*args):
 # Add definition to the EQU list
 def equ(word, replacement):
     global equ_dict
-    equ_dict[word] = replacement
+    equ_dict[word] = str(replacement)
 
 # Print all accumulated ASM statements and clear the list
 def flush():
@@ -37,7 +37,7 @@ def flush():
             full_line = one_command[0] + " " + (",".join(one_command[1:]))
             cmd,sep,comment = full_line.partition(cmt_char)
 
-            # Replace words by their EQU definitions
+            # Replace words with their EQU definitions
             re_word = r'\w[\w\d]*'
             cmd = re.sub(re_word, replace_equ, cmd)
             print(cmd + sep + comment)

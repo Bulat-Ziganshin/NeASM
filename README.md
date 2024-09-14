@@ -1,7 +1,14 @@
+```
+A boy writes in C++.
+A man writes in assembler.
+A real man writes his very own assembler.
+A woman goes into the grocery and buys a faster computer.
+```
+
 ## Python-based High-Level Assembler
 
 There are many ways to implement High-Level Assembler.
-This project resembles [PL/I preprocessor], [Crystal], [Perl ASM], and [Mojo].
+This project resembles [PL/I preprocessor], [Crystal], [MetaLua], [Perl ASM], and [Mojo].
 
 Here, Python is used as a compile-time meta-language, employing its loops, subroutines, ifs, variables...
 for dynamic generation of resulting assembler code.
@@ -42,7 +49,7 @@ E.g., this code (see [example2.neasm]):
   paddq xmm{n+1}, xmm{n}
 ```
 
-is auto-translated into this Python [code](example2.intermediate):
+is auto-translated into this Python [code][example2.intermediate]:
 
 ```python
 for n in range(4):
@@ -60,6 +67,27 @@ paddq xmm4, xmm3
 This means that eventually, we will be able to write the usual assembler code,
 extended with Python as a meta-language to generate repetitive code,
 auto-alloc registers, and perform user-defined code transformations.
+
+---
+
+You can also switch between asm and Python modes using `%asm` and `%python` pseudo-commands
+(and then use '%' to invert the mode for a single line) - see [example][asm-python-pseudo-commands].
+
+You can use `neasm.equ(id, replacement)` library call
+or equivalent `id EQU replacement` asm pseudo-command
+to define textual replacements that doesn't need braces around:
+```
+%equ('offs', 42)
+addr equ EBX
+value EQU EAX
+mov [addr+offs], value
+```
+
+translated into `mov [EBX+42], EAX`.
+
+Note the difference - while `{v}` is replaced by the current contents of Python variable `v`,
+EQU-defined replacements are kept in the special dictionary used only to preprocess
+asm code lines. This dictionary is cleared by the `neasm.flush()` call.
 
 
 
@@ -115,6 +143,7 @@ macro assembler (masm, gas, [nasm], [fasm]) I know.
 
 [PL/I preprocessor]: https://en.wikipedia.org/wiki/PL/I_preprocessor
 [Crystal]: https://crystal-lang.org/reference/1.13/syntax_and_semantics/macros/
+[MetaLua]: http://lua-users.org/wiki/MetaLua
 [Perl ASM]: https://github.com/openssl/openssl/blob/master/crypto/aes/asm/aesv8-armx.pl
 [Mojo]: https://www.modular.com/mojo
 [pyexpander]: https://pyexpander.sourceforge.io/reference-expander.html
@@ -125,5 +154,6 @@ macro assembler (masm, gas, [nasm], [fasm]) I know.
 [example2.neasm]: https://github.com/Bulat-Ziganshin/NeASM/blob/e242efbd308e9cbd8f0831b3386ee86dfcc1bbdc/example2.neasm#L5-L6
 [example2.intermediate]: https://github.com/Bulat-Ziganshin/NeASM/blob/e242efbd308e9cbd8f0831b3386ee86dfcc1bbdc/example2.asm#L9-L10
 [example2.asm]: https://github.com/Bulat-Ziganshin/NeASM/blob/e242efbd308e9cbd8f0831b3386ee86dfcc1bbdc/example2.asm#L21-L24
+[asm-python-pseudo-commands]: https://github.com/Bulat-Ziganshin/NeASM/blob/967e87ab97fa1429f9262e83f36d6913b4fc4759/example2.neasm#L17-L26
 [reordering implementation]: https://github.com/Bulat-Ziganshin/NeASM/commit/e242efbd308e9cbd8f0831b3386ee86dfcc1bbdc#diff-3d0faa46eb38ecc83a9d626adb745b0fb06c0d74a2a6119b88b6403670254341R18-R30
 

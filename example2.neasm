@@ -24,3 +24,8 @@ def xchg(a,b):
 %asm
 {xchg(si,di)}
 {xchg(r8,r10)}
+
+%equ('offs', 42)
+addr equ EBX
+value EQU EAX
+mov [addr+offs], value

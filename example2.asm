@@ -26,6 +26,11 @@
 #
 # asm("" + str(xchg(si,di)) + "")
 # asm("" + str(xchg(r8,r10)) + "")
+# asm("")
+# equ('offs', 42)
+# asm("# addr equ EBX")
+# asm("# value EQU EAX")
+# asm("mov [addr+offs], value")
 
 
 paddq xmm1, xmm0
@@ -62,3 +67,7 @@ xor r8,r10
 xor r10,r8
 xor r8,r10
 
+
+# addr equ EBX
+# value EQU EAX
+mov [EBX+42], EAX
