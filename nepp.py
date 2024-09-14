@@ -27,7 +27,7 @@ def preprocess(text, title = ''):
     print()
 
     exec('\n'.join(program))
-    finish()
+    flush()
 
 
 def preprocess_file(filename):
