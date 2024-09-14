@@ -7,12 +7,12 @@ cmt_char = '#'
 
 # Start from scratch
 def clearall():
-    global cmd_lists, equ_dict
+    global cmd_lists, equ_dict, regalloc
     # Here we keep all assembler statements issued by the program
     cmd_lists = [[]]
     # Here we keep all EQU definitions
     equ_dict = dict()
-    clear_regs()
+    regalloc = RegisterAllocator()
 
 # Add one more statement to the last command list
 def asm(*args):
@@ -60,30 +60,37 @@ def interleave_streams():
     cmd_lists = cmd_lists[0:1]
 
 
-# Initialize the free registers list
-def clear_regs():
-    # Here we keep registers which aren't yet allocated
-    global free_regs
-    free_regs = registers.reg.copy()
-    free_regs.remove("rcx")
-    free_regs.remove("rsp")
+# Allocates registers for variables from a common pool
+class RegisterAllocator:
+    def __init__(self):
+        # Initialize the free registers list
+        # Here we keep registers which aren't yet allocated
+        self.free_regs = registers.reg.copy()
+        self.free_regs.remove("rcx")
+        self.free_regs.remove("rsp")
 
-# Allocate one register from the free list
+    # Allocate one register from the free list
+    def alloc_reg(self):
+        return self.free_regs.pop(0)
+
+    # Allocate n registers from the free list
+    def alloc_regs(self, n):
+        result = self.free_regs[0:n]
+        self.free_regs = self.free_regs[n:]
+        return result
+
+    # Return registers to the free list
+    def free_reg(self, *regs):
+        self.free_regs[0:0] = regs
+
 def alloc_reg():
-    global free_regs
-    return free_regs.pop(0)
+    return regalloc.alloc_reg()
 
-# Allocate n registers from the free list
 def alloc_regs(n):
-    global free_regs
-    result = free_regs[0:n]
-    free_regs = free_regs[n:]
-    return result
+    return regalloc.alloc_regs(n)
 
-# Return registers to the free list
 def free_reg(*regs):
-    global free_regs
-    free_regs[0:0] = regs
+    regalloc.free_reg(*regs)
 
 
 clearall()
