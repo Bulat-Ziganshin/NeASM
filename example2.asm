@@ -5,10 +5,10 @@
 # # This is an example of using NeASM as Python-based preprocessor
 # #   for regular assembler code.
 # # Preprocess this file by running `nepp.py example2.neasm >example2.asm`
-#
+# asm("")
 # for n in range(4):
 #   asm("paddq xmm" + str(n+1) + ", xmm" + str(n) + "")
-# asm("#")
+# asm("")
 # for n in range(8,12):
 #   start_new_stream()
 #   asm("mov r" + str(n) + ", [ebp+" + str(n*8) + "]")
@@ -17,12 +17,22 @@
 #   asm("vpmovmskb r" + str(n) + ", ymm" + str(n) + "")
 #   asm("mov [ebp+" + str(n*8) + "], r" + str(n) + "")
 # interleave_streams()
+# asm("")
+# def xchg(a,b):
+#   asm("xor " + str(a) + "," + str(b) + "")
+#   asm("xor " + str(b) + "," + str(a) + "")
+#   asm("xor " + str(a) + "," + str(b) + "")
+#   return ""
+#
+# asm("" + str(xchg(si,di)) + "")
+# asm("" + str(xchg(r8,r10)) + "")
+
 
 paddq xmm1, xmm0
 paddq xmm2, xmm1
 paddq xmm3, xmm2
 paddq xmm4, xmm3
-#
+
 mov r8, [ebp+64]
 mov r9, [ebp+72]
 mov r10, [ebp+80]
@@ -43,3 +53,12 @@ mov [ebp+64], r8
 mov [ebp+72], r9
 mov [ebp+80], r10
 mov [ebp+88], r11
+
+xor si,di
+xor di,si
+xor si,di
+
+xor r8,r10
+xor r10,r8
+xor r8,r10
+

@@ -9,16 +9,29 @@ from registers import *
 
 def preprocess(text, title = ''):
     program = []
+    python_mode = False   # asm mode by default
+
     for line in text.splitlines():
-        # Copy spaces, starting the line, intact to preserve the indentation structure
-        code = line.lstrip()
-        spaces = line[0 : len(line) - len(code)]
-        if (code=="")  or  (code[0] == '%'):
-            program.append(spaces + code[1:])
+        # Copy as-is spaces starting the line
+        cmd = line.lstrip()
+        spaces = line[0 : len(line) - len(cmd)]
+
+        # Detect inversion of python_mode for the current line, or switch the global mode
+        has_prefix  =  (cmd!="")  and  (cmd[0] == '%')
+        if has_prefix:
+            cmd = cmd[1:]
+            if (cmd == 'python')  or  (cmd == 'asm'):
+                python_mode = (cmd == 'python')
+                continue
+
+        # Add the command intact in the Python mode, or make it asm("...") call in the asm mode
+        if python_mode ^ has_prefix:
+            program.append(spaces + cmd)
         else:
-            # Allow to use "{expr}" syntax to evaluate Python expressions inside assembler code
-            code = re.sub(r'[{](.+?)[}]', r'" + str(\1) + "', code)
-            program.append(spaces + "asm(\"" + code + "\")")
+            # Replace "{expr}" occurences with results of `expr` evaluated as Python expression
+            cmd = re.sub(r'[{](.+?)[}]', r'" + str(\1) + "', cmd)
+            # Output the final asm command
+            program.append(spaces + "asm(\"" + cmd + "\")")
 
     print(title + cmt_char + ' The executed Python code:')
     print(cmt_char)

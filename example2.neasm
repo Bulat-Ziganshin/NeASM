@@ -4,7 +4,7 @@
 
 %for n in range(4):
   paddq xmm{n+1}, xmm{n}
-#
+
 %for n in range(8,12):
   %start_new_stream()
   mov r{n}, [ebp+{n*8}]
@@ -13,3 +13,14 @@
   vpmovmskb r{n}, ymm{n}
   mov [ebp+{n*8}], r{n}
 %interleave_streams()
+
+%python
+def xchg(a,b):
+  %xor {a},{b}
+  %xor {b},{a}
+  %xor {a},{b}
+  return ""
+
+%asm
+{xchg(si,di)}
+{xchg(r8,r10)}
