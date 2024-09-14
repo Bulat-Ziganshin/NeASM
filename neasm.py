@@ -1,6 +1,10 @@
 import sys, re, itertools
 import registers
 
+
+# Char used to start a comment in ASM code (either '#' or ';)
+cmt_char = '#'
+
 # Start from scratch
 def clearall():
     global cmd_lists, equ_dict
@@ -28,11 +32,15 @@ def flush():
         return equ_dict.get(word, word)
 
     for one_list in cmd_lists:
-        for one_line in one_list:
-            cmd = one_line[0] + " " + (",".join(one_line[1:]))
+        for one_command in one_list:
+            # Combine parts of the command into a single string and separate the non-comment part for further processing
+            full_line = one_command[0] + " " + (",".join(one_command[1:]))
+            cmd,sep,comment = full_line.partition(cmt_char)
+
+            # Replace words by their EQU definitions
             re_word = r'\w[\w\d]*'
             cmd = re.sub(re_word, replace_equ, cmd)
-            print(cmd)
+            print(cmd + sep + comment)
 
     clearall()
 
