@@ -153,21 +153,33 @@ rather than using the complete lifetime analysis.
 This means that for variables, whose values persist between loop iterations,
 you may need to add artificial variable references before and after the loop body.
 
-The allocator also relies on these "common sense" rules:
-- One asm operation can't write more than one register (we ignore flags and mask registers for a while).
+The allocator also relies on the following "common sense" rules:
+- One asm operation can't write more than one register of the same class (i.e. GPR/SIMD/mask).
 - On the first variable use, we don't try to use its previous (garbage) contents.
 - Together, this means that in the first line where a new variable is used,
-we unconditionally write to it, while only reading any other variables mentioned on this line.
+we unconditionally write to it, while only reading any other same-class variables mentioned on this line.
 Thus, we can use the same register for two variables - last-used on some line, and first-used on the same line.
+
+Variables are declared using the following directives:
+```
+registers var1, var2   # these variables will be placed into 64-bit general-purpose registers
+XMM_register src       # src will be placed into XMM register
+YMM_register match     # match will be placed into YMM register
+ZMM_register result    # result will be placed into ZMM register
+```
+
+Directive names are case-insensitive, and you can use single or plural form ("register" or "registers").
+One directive can declare multiple variables, comma-separated.
 
 Now, I'm ready to provide [code sample][var-alloc.neasm]:
 ```
-register ptr, counter, sum
+%UNROLL = 4
+REGISTERS ptr, counter, sum
 mov ptr, [rsp+40]
-mov counter, 16
+mov counter, 16 - {UNROLL}
 
 start:
-%for n in range(2):
+%for n in range(UNROLL):
   %start_new_stream()
   register sum{n}
   mov sum{n}, [ptr + counter*8 + {n}*8]
@@ -177,8 +189,8 @@ start:
     lea sum{n}, [sum{n} + counter + {n}]
   mov [ptr + counter*8 + {n}*8], sum{n}
 %interleave_streams()
-sub counter, 2
-jnz start
+sub counter, {UNROLL}
+jae start
 
 # Artificially extend variables' lifetime
 mov counter, counter
@@ -188,17 +200,23 @@ mov ptr, ptr
 which [translated into][var-alloc.asm]:
 ```asm
 mov rax, [rsp+40]
-mov rdx, 16
+mov rdx, 16 - 4
 
 start:
 mov rbx, [rax + rdx*8 + 0*8]
 mov rsi, [rax + rdx*8 + 1*8]
+mov rdi, [rax + rdx*8 + 2*8]
+mov rbp, [rax + rdx*8 + 3*8]
 add rbx, rdx
 lea rsi, [rsi + rdx + 1]
+lea rdi, [rdi + rdx + 2]
+lea rbp, [rbp + rdx + 3]
 mov [rax + rdx*8 + 0*8], rbx
 mov [rax + rdx*8 + 1*8], rsi
-sub rdx, 2
-jnz start
+mov [rax + rdx*8 + 2*8], rdi
+mov [rax + rdx*8 + 3*8], rbp
+sub rdx, 4
+jae start
 
 mov rdx, rdx
 mov rax, rax

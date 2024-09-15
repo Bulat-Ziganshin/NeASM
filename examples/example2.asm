@@ -33,12 +33,13 @@
 # asm("mov [addr+offs], value")
 # asm("")
 # asm("### Variable allocation example")
+# UNROLL = 4
 # asm("register ptr, counter, sum")
 # asm("mov ptr, [rsp+40]")
-# asm("mov counter, 16")
+# asm("mov counter, 16 - " + str(UNROLL) + "")
 # asm("")
 # asm("start:")
-# for n in range(2):
+# for n in range(UNROLL):
 #   start_new_stream()
 #   asm("register sum" + str(n) + "")
 #   asm("mov sum" + str(n) + ", [ptr + counter*8 + " + str(n) + "*8]")
@@ -48,8 +49,8 @@
 #     asm("lea sum" + str(n) + ", [sum" + str(n) + " + counter + " + str(n) + "]")
 #   asm("mov [ptr + counter*8 + " + str(n) + "*8], sum" + str(n) + "")
 # interleave_streams()
-# asm("sub counter, 2")
-# asm("jnz start")
+# asm("sub counter, " + str(UNROLL) + "")
+# asm("jae start")
 # asm("")
 # asm("# Artificially extend variables' lifetime")
 # asm("mov counter, counter")
@@ -98,19 +99,27 @@ mov [EBX+42], EAX                       # mov [addr+offs], value
                                         ### Variable allocation example
                                         # register ptr, counter, sum
 mov rax, [rsp+40]                       # mov ptr, [rsp+40]
-mov rdx, 16                             # mov counter, 16
+mov rdx, 16 - 4                         # mov counter, 16 - 4
 
 start:                                  # start:
                                         # register sum0
                                         # register sum1
+                                        # register sum2
+                                        # register sum3
 mov rbx, [rax + rdx*8 + 0*8]            # mov sum0, [ptr + counter*8 + 0*8]
 mov rsi, [rax + rdx*8 + 1*8]            # mov sum1, [ptr + counter*8 + 1*8]
+mov rdi, [rax + rdx*8 + 2*8]            # mov sum2, [ptr + counter*8 + 2*8]
+mov rbp, [rax + rdx*8 + 3*8]            # mov sum3, [ptr + counter*8 + 3*8]
 add rbx, rdx                            # add sum0, counter
 lea rsi, [rsi + rdx + 1]                # lea sum1, [sum1 + counter + 1]
+lea rdi, [rdi + rdx + 2]                # lea sum2, [sum2 + counter + 2]
+lea rbp, [rbp + rdx + 3]                # lea sum3, [sum3 + counter + 3]
 mov [rax + rdx*8 + 0*8], rbx            # mov [ptr + counter*8 + 0*8], sum0
 mov [rax + rdx*8 + 1*8], rsi            # mov [ptr + counter*8 + 1*8], sum1
-sub rdx, 2                              # sub counter, 2
-jnz start                               # jnz start
+mov [rax + rdx*8 + 2*8], rdi            # mov [ptr + counter*8 + 2*8], sum2
+mov [rax + rdx*8 + 3*8], rbp            # mov [ptr + counter*8 + 3*8], sum3
+sub rdx, 4                              # sub counter, 4
+jae start                               # jae start
 
                                         # Artificially extend variables' lifetime
 mov rdx, rdx                            # mov counter, counter

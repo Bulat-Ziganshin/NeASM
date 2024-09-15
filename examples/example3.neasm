@@ -2,25 +2,57 @@
 %#   for regular assembler code.
 %# Preprocess this file by running `nepp.py example3.neasm >example3.asm`
 
+PREFETCH equ 16
+%ROWSIZE = 16
+%LINE = 8
+
 hash_table equ r15
 dict       equ r14
 pos        equ r13
 src_mask   equ [rsp+40]
 hash_mask  equ [rsp+48]
+match_lens equ rsp+56
 
-register src_8_bytes
-register hash_row
-
-mov src_8_bytes, [dict + pos]
-and src_8_bytes, src_mask
-xor hash_row, hash_row
-crc32 hash_row, src_8_bytes
-and hash_row, hash_mask
-
-%for n in range(4):
+%for n in range(3):
     %start_new_stream()
-    register addr{n}
-    mov addr{n}, [hash_table + hash_row + {n}*8]
-    prefetch [dict + addr{n}]
-    prefetch [dict + addr{n} + 31]
+    REGISTER src_8_bytes{n}
+    REGISTER hash_row{n}   # 2: Prefetch HashTable, 1: Prefetch Dictionary, 0: Check matches
+    %
+    mov src_8_bytes{n}, [dict + pos + PREFETCH*{n}*64]
+    and src_8_bytes{n}, src_mask
+    xor hash_row{n}, hash_row{n}
+    crc32 hash_row{n}, src_8_bytes{n}
+    and hash_row{n}, hash_mask
 %interleave_streams()
+
+prefetch [hash_table + hash_row2]   # Prefetch HashTable
+
+YMM_REGISTER src_data
+vmovdqu src_data, [dict + pos]
+
+%for i in range(0, ROWSIZE, LINE):
+    %# Prefetch Dictionary
+    %for n in range(i, i+LINE):
+        %start_new_stream()
+        REGISTER prefetch_addr{n}
+        %
+        mov prefetch_addr{n}, [hash_table + hash_row1 + {n}*8]
+        prefetch [dict + prefetch_addr{n}]
+        prefetch [dict + prefetch_addr{n} + 31]
+    %interleave_streams()
+    %
+    %# Check matches
+    %for n in range(i, i+LINE):
+        %start_new_stream()
+        REGISTER match_addr{n}, mask_eq_bits{n}, count{n}
+        YMM_REGISTER mask_eq_bytes{n}
+        %
+        mov match_addr{n}, [hash_table + hash_row0 + {n}*8]
+        vpcmpeqb mask_eq_bytes{n}, src_data, [dict + match_addr{n}]
+        vpmovmskb mask_eq_bits{n}, mask_eq_bytes{n}
+        not mask_eq_bits{n}
+        tzcnt count{n}, mask_eq_bits{n}
+        mov [match_lens + {n}*8], count{n}
+    %interleave_streams()
+
+pxor src_data, src_data

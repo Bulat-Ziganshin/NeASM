@@ -49,9 +49,9 @@ def flush():
             # Execute REGISTER directive
             matchobj = re.fullmatch(r'([\S]+)\s+(.*?)\s*', cmd)
             if matchobj:
-                op,param = matchobj.group(1,2)
-                if op.upper() == 'REGISTER':
-                    vars.declare(param)
+                directive,param = matchobj.group(1,2)
+                directive = directive.lower()
+                if vars.try_process_directive(directive,param):
                     sep = cmt_char + ' ' + cmd + sep
                     cmd = ""
 
@@ -97,11 +97,11 @@ def interleave_streams():
     cmd_lists = cmd_lists[0:1]
 
 
-def alloc_reg():
-    return vars.alloc_reg()
+def alloc_reg(*args):
+    return vars.alloc_reg(*args)
 
-def alloc_regs(n):
-    return vars.alloc_regs(n)
+def alloc_regs(*args):
+    return vars.alloc_regs(*args)
 
 def free_reg(*regs):
     vars.free_reg(*regs)

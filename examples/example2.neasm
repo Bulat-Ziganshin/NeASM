@@ -31,12 +31,13 @@ value EQU EAX
 mov [addr+offs], value
 
 ### Variable allocation example
+%UNROLL = 4
 register ptr, counter, sum
 mov ptr, [rsp+40]
-mov counter, 16
+mov counter, 16 - {UNROLL}
 
 start:
-%for n in range(2):
+%for n in range(UNROLL):
   %start_new_stream()
   register sum{n}
   mov sum{n}, [ptr + counter*8 + {n}*8]
@@ -46,8 +47,8 @@ start:
     lea sum{n}, [sum{n} + counter + {n}]
   mov [ptr + counter*8 + {n}*8], sum{n}
 %interleave_streams()
-sub counter, 2
-jnz start
+sub counter, {UNROLL}
+jae start
 
 # Artificially extend variables' lifetime
 mov counter, counter
