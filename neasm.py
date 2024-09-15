@@ -5,6 +5,12 @@ import registers
 # Char used to start a comment in ASM code (either '#' or ';)
 cmt_char = '#'
 
+# Registers that shouldn't be used by our register allocator.
+# CL is reserved for occasional shifts,
+# and we suppose that RBP is available since stack vars are addressed via RSP
+reserve_registers = ["rcx", "rsp"]
+
+
 # Start from scratch
 def clearall():
     global cmd_lists, equ_dict, vars
@@ -53,7 +59,8 @@ def flush():
                     cmd = cmt_char + ' ' + cmd
 
             # Replace words with their EQU definitions
-            cmd = re.sub(r'\w+', replace_equ, cmd)
+            if cmd != ""  and  cmd[0] != cmt_char:
+                cmd = re.sub(r'\w+', replace_equ, cmd)
             print(cmd + sep + comment)
             linenum += 1
 
@@ -85,14 +92,13 @@ class RegisterAllocator:
         # Initialize the free registers list
         # Here we keep registers which aren't yet allocated
         self.free_regs = registers.reg.copy()
-        self.free_regs.remove("rcx")
-        self.free_regs.remove("rsp")
+        for reg in reserve_registers:
+            self.free_regs.remove(reg)
 
         self.declared_vars = set()          # list of declared var names
         self.first_line = dict()            # first line where a var was used (id->linenum mapping)
-        self.alloc_before = dict()          #   the same (linenum->list of ids mapping)
         self.last_line = dict()             # last line where a var was used
-        self.free_after = dict()            #   the same (linenum->list of ids mapping)
+        self.var = dict()
 
     # Allocate one register from the free list
     def alloc_reg(self):
@@ -118,13 +124,32 @@ class RegisterAllocator:
             self.first_line.setdefault(id, linenum)
             self.last_line[id] = linenum
 
+    # Analyze lifetime of each variable and alloc the same registers to non-overlapping lifes
     def lifeness_analysis(self):
+        # To do: the current allocator suppose that a single ASM statement can't modify more than one register.
+        # This allows us to alloc the same register for last use of var1 and first use of var2.
+
+        # Variable lifetime records
+        life = [];  ALLOC = 1;  FREE = 0   # should be ALLOC > FREE for correct order of alloc/free events
         for id in self.first_line.keys():
-            first = self.first_line[id]
-            last = self.last_line[id]
-            self.alloc_before.setdefault(first,[]).append(id)
-            self.free_after.setdefault(last,[]).append(id)
-            ###print(id, self.first_line[id], '-', self.last_line[id])
+            life.append((self.first_line[id], ALLOC, id))   # first use of id - alloc
+            life.append((self.last_line[id], FREE, id))     # last use of id - free
+        life.sort()
+
+        # Assign registers to variables based on the lifetime analysis
+        for (_,op,id) in life:
+            if self.first_line[id] == self.last_line[id]:
+                # A var used only in a single line, we should alloc a register and free it immediately
+                if op==ALLOC:
+                    self.var[id] = alloc_reg()
+                    free_reg(self.var[id])
+            elif op==ALLOC:
+                self.var[id] = alloc_reg()
+            else:
+                free_reg(self.var[id])
+
+        ###print(life)
+        ###print(self.var)
 
 def alloc_reg():
     return vars.alloc_reg()

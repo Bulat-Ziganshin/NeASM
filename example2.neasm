@@ -31,5 +31,7 @@ value EQU EAX
 mov [addr+offs], value
 
 declare input
+declare intermediate
 declare output
-mov output, input
+mov intermediate, input
+mov output, intermediate
