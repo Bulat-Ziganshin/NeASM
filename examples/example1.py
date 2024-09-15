@@ -1,8 +1,11 @@
 # This is an example of using NeASM as Python library
+import sys
+sys.path.append('../neasm')
 
 import neasm
 from neasm import asm, alloc_reg, alloc_regs, free_reg
 from registers import *
+
 
 asm("add", rax, rbx)
 asm("sub", rax, rbx)

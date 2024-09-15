@@ -160,7 +160,7 @@ The allocator also relies on these "common sense" rules:
 we unconditionally write to it, while only reading any other variables mentioned on this line.
 Thus, we can use the same register for two variables - last-used on some line, and first-used on the same line.
 
-Now, I'm ready to provide code sample:
+Now, I'm ready to provide [code sample][var-alloc.neasm]:
 ```
 register ptr, counter, sum
 mov ptr, [rsp+40]
@@ -185,7 +185,7 @@ mov counter, counter
 mov ptr, ptr
 ```
 
-which translated into:
+which [translated into][var-alloc.asm]:
 ```asm
 mov rax, [rsp+40]
 mov rdx, 16
@@ -219,8 +219,8 @@ mov rax, rax
 [HLA]: https://en.wikipedia.org/wiki/High-level_assembler
 [HLL]: https://en.wikipedia.org/wiki/High-level_programming_language
 
-[fasm]: https://flatassembler.net/docs.php?article=manual
 [nasm]: https://www.nasm.us/xdoc/2.16.03/html/nasmdoc4.html
+[fasm]: https://flatassembler.net/docs.php?article=manual
 
 [example2.neasm]: https://github.com/Bulat-Ziganshin/NeASM/blob/e242efbd308e9cbd8f0831b3386ee86dfcc1bbdc/example2.neasm#L5-L6
 [example2.intermediate]: https://github.com/Bulat-Ziganshin/NeASM/blob/e242efbd308e9cbd8f0831b3386ee86dfcc1bbdc/example2.asm#L9-L10
@@ -228,3 +228,5 @@ mov rax, rax
 [asm-python-pseudo-commands]: https://github.com/Bulat-Ziganshin/NeASM/blob/967e87ab97fa1429f9262e83f36d6913b4fc4759/example2.neasm#L17-L26
 [reordering implementation]: https://github.com/Bulat-Ziganshin/NeASM/commit/e242efbd308e9cbd8f0831b3386ee86dfcc1bbdc#diff-3d0faa46eb38ecc83a9d626adb745b0fb06c0d74a2a6119b88b6403670254341R18-R30
 
+[var-alloc.neasm]: https://github.com/Bulat-Ziganshin/NeASM/blob/670d8efa8b320359bbff1bc58da09ea35bc143c5/example2.neasm#L33-L54
+[var-alloc.asm]: https://github.com/Bulat-Ziganshin/NeASM/blob/670d8efa8b320359bbff1bc58da09ea35bc143c5/example2.asm#L98-L117
