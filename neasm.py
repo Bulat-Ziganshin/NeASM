@@ -33,14 +33,10 @@ def equ(word, replacement):
 
 # Print all accumulated ASM statements and clear the list
 def flush():
+    program = []
     linenum = 0
 
-    # Replace a word with its definition stored in equ_dict
-    def replace_equ(matchobj):
-        id = matchobj.group(0)
-        vars.seen_at(id, linenum)
-        return equ_dict.get(id, id)
-
+    # The first pass over the program, only executing directives
     for one_list in cmd_lists:
         for one_command in one_list:
             # Combine parts of the command into a single string and separate the non-comment part for further processing
@@ -50,23 +46,38 @@ def flush():
                 full_line = one_command[0]
             cmd,sep,comment = full_line.partition(cmt_char)
 
-            # Execute DECLARE meta-command
+            # Execute DECLARE directive
             matchobj = re.fullmatch(r'([\S]+)\s+(.*?)\s*', cmd)
             if matchobj:
                 op,param = matchobj.group(1,2)
                 if op.lower() == 'declare':
                     vars.declare(param)
-                    cmd = cmt_char + ' ' + cmd
+                    sep = cmt_char + ' ' + cmd + sep
+                    cmd = ""
 
-            # Replace words with their EQU definitions
-            if cmd != ""  and  cmd[0] != cmt_char:
-                cmd = re.sub(r'\w+', replace_equ, cmd)
-            print(cmd + sep + comment)
+            # Record lines where an identifier was seen
+            for matchobj in re.finditer(r'\w+', cmd):
+                id = matchobj.group(0)
+                vars.seen_at(id, linenum)
+
+            program.append(cmd + sep + comment)
             linenum += 1
 
-    vars.lifeness_analysis()
-    ###print(vars.alloc_before)
-    ###print(vars.free_after)
+    vars.lifetime_analysis()
+
+    # Replace an identifier with its EQU definition or register name
+    def replace_ids(matchobj):
+        id = matchobj.group(0)
+        return vars.var2reg(equ_dict.get(id, id))
+
+    # The second pass over the program, replacing identifiers with their EQU/DECLARE definitions
+    for full_line in program:
+        cmd,sep,comment = full_line.partition(cmt_char)
+        if cmd=="":
+            print("".ljust(40) + sep + comment)
+        else:
+            new_cmd = re.sub(r'\w+', replace_ids, cmd)
+            print(new_cmd.ljust(35) + '     ' + cmt_char + ' ' + cmd + sep + comment)
 
     clearall()
 
@@ -125,7 +136,7 @@ class RegisterAllocator:
             self.last_line[id] = linenum
 
     # Analyze lifetime of each variable and alloc the same registers to non-overlapping lifes
-    def lifeness_analysis(self):
+    def lifetime_analysis(self):
         # To do: the current allocator suppose that a single ASM statement can't modify more than one register.
         # This allows us to alloc the same register for last use of var1 and first use of var2.
 
@@ -148,8 +159,10 @@ class RegisterAllocator:
             else:
                 free_reg(self.var[id])
 
-        ###print(life)
-        ###print(self.var)
+    # Replace a variable name with assigned register name, or return id unchanged
+    def var2reg(self, id):
+        return self.var.get(id, id)
+
 
 def alloc_reg():
     return vars.alloc_reg()

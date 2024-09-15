@@ -1,0 +1,27 @@
+%# This is an example of using NeASM as Python-based preprocessor
+%#   for regular assembler code.
+%# Preprocess this file by running `nepp.py example3.neasm >example3.asm`
+
+hash_table equ r15
+dict       equ r14
+pos        equ r13
+src_mask   equ [esp+40]
+hash_mask  equ [esp+48]
+
+declare src_8_bytes
+declare hash_row
+
+mov src_8_bytes, [dict + pos]
+and src_8_bytes, src_mask
+xor hash_row, hash_row
+crc32 hash_row, src_8_bytes
+and hash_row, hash_mask
+prefetch [hash_table + hash_row]
+
+%for n in range(4):
+    %start_new_stream()
+    declare addr{n}
+    mov addr{n}, [hash_table + hash_row + {n}*8]
+    prefetch [dict + addr{n}]
+    prefetch [dict + addr{n} + 31]
+%interleave_streams()
