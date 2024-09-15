@@ -7,12 +7,13 @@ cmt_char = '#'
 
 # Start from scratch
 def clearall():
-    global cmd_lists, equ_dict, regalloc
+    global cmd_lists, equ_dict, vars
     # Here we keep all assembler statements issued by the program
     cmd_lists = [[]]
     # Here we keep all EQU definitions
     equ_dict = dict()
-    regalloc = RegisterAllocator()
+    # Here we keep the variable->register mapping
+    vars = RegisterAllocator()
 
 # Add one more statement to the last command list
 def asm(*args):
@@ -26,21 +27,39 @@ def equ(word, replacement):
 
 # Print all accumulated ASM statements and clear the list
 def flush():
+    linenum = 0
+
     # Replace a word with its definition stored in equ_dict
     def replace_equ(matchobj):
-        word = matchobj.group(0)
-        return equ_dict.get(word, word)
+        id = matchobj.group(0)
+        vars.seen_at(id, linenum)
+        return equ_dict.get(id, id)
 
     for one_list in cmd_lists:
         for one_command in one_list:
             # Combine parts of the command into a single string and separate the non-comment part for further processing
-            full_line = one_command[0] + " " + (",".join(one_command[1:]))
+            if len(one_command) > 1:
+                full_line = one_command[0] + " " + (",".join(one_command[1:]))
+            else:
+                full_line = one_command[0]
             cmd,sep,comment = full_line.partition(cmt_char)
 
+            # Execute DECLARE meta-command
+            matchobj = re.fullmatch(r'([\S]+)\s+(.*?)\s*', cmd)
+            if matchobj:
+                op,param = matchobj.group(1,2)
+                if op.lower() == 'declare':
+                    vars.declare(param)
+                    cmd = cmt_char + ' ' + cmd
+
             # Replace words with their EQU definitions
-            re_word = r'\w[\w\d]*'
-            cmd = re.sub(re_word, replace_equ, cmd)
+            cmd = re.sub(r'\w+', replace_equ, cmd)
             print(cmd + sep + comment)
+            linenum += 1
+
+    vars.lifeness_analysis()
+    ###print(vars.alloc_before)
+    ###print(vars.free_after)
 
     clearall()
 
@@ -69,6 +88,12 @@ class RegisterAllocator:
         self.free_regs.remove("rcx")
         self.free_regs.remove("rsp")
 
+        self.declared_vars = set()          # list of declared var names
+        self.first_line = dict()            # first line where a var was used (id->linenum mapping)
+        self.alloc_before = dict()          #   the same (linenum->list of ids mapping)
+        self.last_line = dict()             # last line where a var was used
+        self.free_after = dict()            #   the same (linenum->list of ids mapping)
+
     # Allocate one register from the free list
     def alloc_reg(self):
         return self.free_regs.pop(0)
@@ -83,14 +108,32 @@ class RegisterAllocator:
     def free_reg(self, *regs):
         self.free_regs[0:0] = regs
 
+    # Declare id as a variable name that will require a register allocation
+    def declare(self, id):
+        self.declared_vars.add(id)
+
+    # Record the first and last line where the id was used
+    def seen_at(self, id, linenum):
+        if id in self.declared_vars:
+            self.first_line.setdefault(id, linenum)
+            self.last_line[id] = linenum
+
+    def lifeness_analysis(self):
+        for id in self.first_line.keys():
+            first = self.first_line[id]
+            last = self.last_line[id]
+            self.alloc_before.setdefault(first,[]).append(id)
+            self.free_after.setdefault(last,[]).append(id)
+            ###print(id, self.first_line[id], '-', self.last_line[id])
+
 def alloc_reg():
-    return regalloc.alloc_reg()
+    return vars.alloc_reg()
 
 def alloc_regs(n):
-    return regalloc.alloc_regs(n)
+    return vars.alloc_regs(n)
 
 def free_reg(*regs):
-    regalloc.free_reg(*regs)
+    vars.free_reg(*regs)
 
 
 clearall()

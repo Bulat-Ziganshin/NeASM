@@ -29,3 +29,7 @@ def xchg(a,b):
 addr equ EBX
 value EQU EAX
 mov [addr+offs], value
+
+declare input
+declare output
+mov output, input
