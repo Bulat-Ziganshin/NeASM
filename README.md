@@ -20,7 +20,7 @@ Even the current minimalist implementation allows one to employ the full power o
 - use Python subroutines with parameters as macro/template/generics facility
 
 ... but we all know that macro-assemblers provide similar features, even if with unusual syntax.
-The real power of NeASM comes from the fact that it's a tiny Python application (< 100 LOC!),
+The real power of NeASM comes from the fact that it's a small Python application (< 1000 LOC),
 so everyone can extend it with new features.
 See e.g. [primitive code reordering ](#primitive-code-reordering)
 that was [implemented][reordering implementation] in 10 LOC (!!!).
@@ -140,6 +140,74 @@ while providing a feature that isn't supported by any
 macro assembler (masm, gas, [nasm], [fasm]) I know.
 
 
+### Register auto-allocation
+
+The single most important difference between [HLL] and any [HLA]
+is the automatic allocation of registers for variables.
+It should take into account the lifetime of each variable,
+that needs more complex program analysis than any existing [HLA] implements.
+
+NeASM implements simple automatic register allocation,
+with a variable lifetime measured as a range of source code lines,
+rather than using the complete lifetime analysis.
+This means that for variables, whose values persist between loop iterations,
+you may need to add artificial variable references before and after the loop body.
+
+The allocator also relies on these "common sense" rules:
+- One asm operation can't write more than one register (we ignore flags and mask registers for a while).
+- On the first variable use, we don't try to use its previous (garbage) contents.
+- Together, this means that in the first line where a new variable is used,
+we unconditionally write to it, while only reading any other variables mentioned on this line.
+Thus, we can use the same register for two variables - last-used on some line, and first-used on the same line.
+
+Now, I'm ready to provide code sample:
+```
+register ptr, counter, sum
+mov ptr, [rsp+40]
+mov counter, 16
+
+start:
+%for n in range(2):
+  %start_new_stream()
+  register sum{n}
+  mov sum{n}, [ptr + counter*8 + {n}*8]
+  %if n==0:
+    add sum{n}, counter
+  %else:
+    lea sum{n}, [sum{n} + counter + {n}]
+  mov [ptr + counter*8 + {n}*8], sum{n}
+%interleave_streams()
+sub counter, 2
+jnz start
+
+# Artificially extend variables' lifetime
+mov counter, counter
+mov ptr, ptr
+```
+
+which translated into:
+```asm
+mov rax, [rsp+40]
+mov rdx, 16
+
+start:
+mov rbx, [rax + rdx*8 + 0*8]
+mov rsi, [rax + rdx*8 + 1*8]
+add rbx, rdx
+lea rsi, [rsi + rdx + 1]
+mov [rax + rdx*8 + 0*8], rbx
+mov [rax + rdx*8 + 1*8], rsi
+sub rdx, 2
+jnz start
+
+mov rdx, rdx
+mov rax, rax
+```
+
+
+
+
+
 
 [PL/I preprocessor]: https://en.wikipedia.org/wiki/PL/I_preprocessor
 [Crystal]: https://crystal-lang.org/reference/1.13/syntax_and_semantics/macros/
@@ -147,6 +215,9 @@ macro assembler (masm, gas, [nasm], [fasm]) I know.
 [Perl ASM]: https://github.com/openssl/openssl/blob/master/crypto/aes/asm/aesv8-armx.pl
 [Mojo]: https://www.modular.com/mojo
 [pyexpander]: https://pyexpander.sourceforge.io/reference-expander.html
+
+[HLA]: https://en.wikipedia.org/wiki/High-level_assembler
+[HLL]: https://en.wikipedia.org/wiki/High-level_programming_language
 
 [fasm]: https://flatassembler.net/docs.php?article=manual
 [nasm]: https://www.nasm.us/xdoc/2.16.03/html/nasmdoc4.html

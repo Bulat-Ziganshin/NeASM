@@ -9,22 +9,21 @@
 # asm("# hash_table equ r15")
 # asm("# dict       equ r14")
 # asm("# pos        equ r13")
-# asm("# src_mask   equ [esp+40]")
-# asm("# hash_mask  equ [esp+48]")
+# asm("# src_mask   equ [rsp+40]")
+# asm("# hash_mask  equ [rsp+48]")
 # asm("")
-# asm("declare src_8_bytes")
-# asm("declare hash_row")
+# asm("register src_8_bytes")
+# asm("register hash_row")
 # asm("")
 # asm("mov src_8_bytes, [dict + pos]")
 # asm("and src_8_bytes, src_mask")
 # asm("xor hash_row, hash_row")
 # asm("crc32 hash_row, src_8_bytes")
 # asm("and hash_row, hash_mask")
-# asm("prefetch [hash_table + hash_row]")
 # asm("")
 # for n in range(4):
 #     start_new_stream()
-#     asm("declare addr" + str(n) + "")
+#     asm("register addr" + str(n) + "")
 #     asm("mov addr" + str(n) + ", [hash_table + hash_row + " + str(n) + "*8]")
 #     asm("prefetch [dict + addr" + str(n) + "]")
 #     asm("prefetch [dict + addr" + str(n) + " + 31]")
@@ -34,23 +33,22 @@
                                         # hash_table equ r15
                                         # dict       equ r14
                                         # pos        equ r13
-                                        # src_mask   equ [esp+40]
-                                        # hash_mask  equ [esp+48]
+                                        # src_mask   equ [rsp+40]
+                                        # hash_mask  equ [rsp+48]
 
-                                        # declare src_8_bytes
-                                        # declare hash_row
+                                        # register src_8_bytes
+                                        # register hash_row
 
 mov rax, [r14 + r13]                    # mov src_8_bytes, [dict + pos]
-and rax, [esp+40]                       # and src_8_bytes, src_mask
+and rax, [rsp+40]                       # and src_8_bytes, src_mask
 xor rdx, rdx                            # xor hash_row, hash_row
 crc32 rdx, rax                          # crc32 hash_row, src_8_bytes
-and rdx, [esp+48]                       # and hash_row, hash_mask
-prefetch [r15 + rdx]                    # prefetch [hash_table + hash_row]
+and rdx, [rsp+48]                       # and hash_row, hash_mask
 
-                                        # declare addr0
-                                        # declare addr1
-                                        # declare addr2
-                                        # declare addr3
+                                        # register addr0
+                                        # register addr1
+                                        # register addr2
+                                        # register addr3
 mov rax, [r15 + rdx + 0*8]              # mov addr0, [hash_table + hash_row + 0*8]
 mov rbx, [r15 + rdx + 1*8]              # mov addr1, [hash_table + hash_row + 1*8]
 mov rsi, [r15 + rdx + 2*8]              # mov addr2, [hash_table + hash_row + 2*8]

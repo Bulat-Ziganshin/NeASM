@@ -7,11 +7,11 @@
 
 %for n in range(8,12):
   %start_new_stream()
-  mov r{n}, [ebp+{n*8}]
+  mov r{n}, [rbp+{n*8}]
   vmovdqu ymm{n}, [r{n}]
   vpcmpeqb ymm{n}, ymm0
   vpmovmskb r{n}, ymm{n}
-  mov [ebp+{n*8}], r{n}
+  mov [rbp+{n*8}], r{n}
 %interleave_streams()
 
 %python
@@ -30,8 +30,25 @@ addr equ EBX
 value EQU EAX
 mov [addr+offs], value
 
-declare input
-declare intermediate
-declare output
-mov intermediate, input
-mov output, intermediate
+### Variable allocation example
+register ptr, counter, sum
+mov ptr, [rsp+40]
+mov counter, 16
+
+start:
+%for n in range(2):
+  %start_new_stream()
+  register sum{n}
+  mov sum{n}, [ptr + counter*8 + {n}*8]
+  %if n==0:
+    add sum{n}, counter
+  %else:
+    lea sum{n}, [sum{n} + counter + {n}]
+  mov [ptr + counter*8 + {n}*8], sum{n}
+%interleave_streams()
+sub counter, 2
+jnz start
+
+# Artificially extend variables' lifetime
+mov counter, counter
+mov ptr, ptr

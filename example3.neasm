@@ -5,22 +5,21 @@
 hash_table equ r15
 dict       equ r14
 pos        equ r13
-src_mask   equ [esp+40]
-hash_mask  equ [esp+48]
+src_mask   equ [rsp+40]
+hash_mask  equ [rsp+48]
 
-declare src_8_bytes
-declare hash_row
+register src_8_bytes
+register hash_row
 
 mov src_8_bytes, [dict + pos]
 and src_8_bytes, src_mask
 xor hash_row, hash_row
 crc32 hash_row, src_8_bytes
 and hash_row, hash_mask
-prefetch [hash_table + hash_row]
 
 %for n in range(4):
     %start_new_stream()
-    declare addr{n}
+    register addr{n}
     mov addr{n}, [hash_table + hash_row + {n}*8]
     prefetch [dict + addr{n}]
     prefetch [dict + addr{n} + 31]

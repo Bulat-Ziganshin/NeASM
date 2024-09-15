@@ -11,11 +11,11 @@
 # asm("")
 # for n in range(8,12):
 #   start_new_stream()
-#   asm("mov r" + str(n) + ", [ebp+" + str(n*8) + "]")
+#   asm("mov r" + str(n) + ", [rbp+" + str(n*8) + "]")
 #   asm("vmovdqu ymm" + str(n) + ", [r" + str(n) + "]")
 #   asm("vpcmpeqb ymm" + str(n) + ", ymm0")
 #   asm("vpmovmskb r" + str(n) + ", ymm" + str(n) + "")
-#   asm("mov [ebp+" + str(n*8) + "], r" + str(n) + "")
+#   asm("mov [rbp+" + str(n*8) + "], r" + str(n) + "")
 # interleave_streams()
 # asm("")
 # def xchg(a,b):
@@ -31,43 +31,87 @@
 # asm("# addr equ EBX")
 # asm("# value EQU EAX")
 # asm("mov [addr+offs], value")
+# asm("")
+# asm("### Variable allocation example")
+# asm("register ptr, counter, sum")
+# asm("mov ptr, [rsp+40]")
+# asm("mov counter, 16")
+# asm("")
+# asm("start:")
+# for n in range(2):
+#   start_new_stream()
+#   asm("register sum" + str(n) + "")
+#   asm("mov sum" + str(n) + ", [ptr + counter*8 + " + str(n) + "*8]")
+#   if n==0:
+#     asm("add sum" + str(n) + ", counter")
+#   else:
+#     asm("lea sum" + str(n) + ", [sum" + str(n) + " + counter + " + str(n) + "]")
+#   asm("mov [ptr + counter*8 + " + str(n) + "*8], sum" + str(n) + "")
+# interleave_streams()
+# asm("sub counter, 2")
+# asm("jnz start")
+# asm("")
+# asm("# Artificially extend variables' lifetime")
+# asm("mov counter, counter")
+# asm("mov ptr, ptr")
 
 
-paddq xmm1, xmm0
-paddq xmm2, xmm1
-paddq xmm3, xmm2
-paddq xmm4, xmm3
+paddq xmm1, xmm0                        # paddq xmm1, xmm0
+paddq xmm2, xmm1                        # paddq xmm2, xmm1
+paddq xmm3, xmm2                        # paddq xmm3, xmm2
+paddq xmm4, xmm3                        # paddq xmm4, xmm3
 
-mov r8, [ebp+64]
-mov r9, [ebp+72]
-mov r10, [ebp+80]
-mov r11, [ebp+88]
-vmovdqu ymm8, [r8]
-vmovdqu ymm9, [r9]
-vmovdqu ymm10, [r10]
-vmovdqu ymm11, [r11]
-vpcmpeqb ymm8, ymm0
-vpcmpeqb ymm9, ymm0
-vpcmpeqb ymm10, ymm0
-vpcmpeqb ymm11, ymm0
-vpmovmskb r8, ymm8
-vpmovmskb r9, ymm9
-vpmovmskb r10, ymm10
-vpmovmskb r11, ymm11
-mov [ebp+64], r8
-mov [ebp+72], r9
-mov [ebp+80], r10
-mov [ebp+88], r11
+mov r8, [rbp+64]                        # mov r8, [rbp+64]
+mov r9, [rbp+72]                        # mov r9, [rbp+72]
+mov r10, [rbp+80]                       # mov r10, [rbp+80]
+mov r11, [rbp+88]                       # mov r11, [rbp+88]
+vmovdqu ymm8, [r8]                      # vmovdqu ymm8, [r8]
+vmovdqu ymm9, [r9]                      # vmovdqu ymm9, [r9]
+vmovdqu ymm10, [r10]                    # vmovdqu ymm10, [r10]
+vmovdqu ymm11, [r11]                    # vmovdqu ymm11, [r11]
+vpcmpeqb ymm8, ymm0                     # vpcmpeqb ymm8, ymm0
+vpcmpeqb ymm9, ymm0                     # vpcmpeqb ymm9, ymm0
+vpcmpeqb ymm10, ymm0                    # vpcmpeqb ymm10, ymm0
+vpcmpeqb ymm11, ymm0                    # vpcmpeqb ymm11, ymm0
+vpmovmskb r8, ymm8                      # vpmovmskb r8, ymm8
+vpmovmskb r9, ymm9                      # vpmovmskb r9, ymm9
+vpmovmskb r10, ymm10                    # vpmovmskb r10, ymm10
+vpmovmskb r11, ymm11                    # vpmovmskb r11, ymm11
+mov [rbp+64], r8                        # mov [rbp+64], r8
+mov [rbp+72], r9                        # mov [rbp+72], r9
+mov [rbp+80], r10                       # mov [rbp+80], r10
+mov [rbp+88], r11                       # mov [rbp+88], r11
 
-xor si,di
-xor di,si
-xor si,di
+xor si,di                               # xor si,di
+xor di,si                               # xor di,si
+xor si,di                               # xor si,di
 
-xor r8,r10
-xor r10,r8
-xor r8,r10
+xor r8,r10                              # xor r8,r10
+xor r10,r8                              # xor r10,r8
+xor r8,r10                              # xor r8,r10
 
 
-# addr equ EBX
-# value EQU EAX
-mov [EBX+42], EAX
+                                        # addr equ EBX
+                                        # value EQU EAX
+mov [EBX+42], EAX                       # mov [addr+offs], value
+
+                                        ### Variable allocation example
+                                        # register ptr, counter, sum
+mov rax, [rsp+40]                       # mov ptr, [rsp+40]
+mov rdx, 16                             # mov counter, 16
+
+start:                                  # start:
+                                        # register sum0
+                                        # register sum1
+mov rbx, [rax + rdx*8 + 0*8]            # mov sum0, [ptr + counter*8 + 0*8]
+mov rsi, [rax + rdx*8 + 1*8]            # mov sum1, [ptr + counter*8 + 1*8]
+add rbx, rdx                            # add sum0, counter
+lea rsi, [rsi + rdx + 1]                # lea sum1, [sum1 + counter + 1]
+mov [rax + rdx*8 + 0*8], rbx            # mov [ptr + counter*8 + 0*8], sum0
+mov [rax + rdx*8 + 1*8], rsi            # mov [ptr + counter*8 + 1*8], sum1
+sub rdx, 2                              # sub counter, 2
+jnz start                               # jnz start
+
+                                        # Artificially extend variables' lifetime
+mov rdx, rdx                            # mov counter, counter
+mov rax, rax                            # mov ptr, ptr

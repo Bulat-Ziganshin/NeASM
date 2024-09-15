@@ -11,6 +11,10 @@ cmt_char = '#'
 reserve_registers = ["rcx", "rsp"]
 
 
+# Do smth on errors :)
+def error(*msg):
+    print("ERROR:", *msg)
+
 # Start from scratch
 def clearall():
     global cmd_lists, equ_dict, vars
@@ -46,11 +50,11 @@ def flush():
                 full_line = one_command[0]
             cmd,sep,comment = full_line.partition(cmt_char)
 
-            # Execute DECLARE directive
+            # Execute REGISTER directive
             matchobj = re.fullmatch(r'([\S]+)\s+(.*?)\s*', cmd)
             if matchobj:
                 op,param = matchobj.group(1,2)
-                if op.lower() == 'declare':
+                if op.upper() == 'REGISTER':
                     vars.declare(param)
                     sep = cmt_char + ' ' + cmd + sep
                     cmd = ""
@@ -70,7 +74,7 @@ def flush():
         id = matchobj.group(0)
         return vars.var2reg(equ_dict.get(id, id))
 
-    # The second pass over the program, replacing identifiers with their EQU/DECLARE definitions
+    # The second pass over the program, replacing identifiers with their EQU/REGISTER definitions
     for full_line in program:
         cmd,sep,comment = full_line.partition(cmt_char)
         if cmd=="":
@@ -125,9 +129,17 @@ class RegisterAllocator:
     def free_reg(self, *regs):
         self.free_regs[0:0] = regs
 
-    # Declare id as a variable name that will require a register allocation
-    def declare(self, id):
-        self.declared_vars.add(id)
+    # Declare ids as variable names that will require register allocation
+    def declare(self, *all_ids):
+        for id_list in all_ids:
+            # id_list is a list of ids, separated by commas
+            for id in re.split(',', id_list):
+                varname = id.strip()
+                # check id for `letter(letter_or_digit)*` syntax
+                if re.fullmatch(r'\w+', varname)  and  not re.fullmatch(r'\d\w*', varname):
+                    self.declared_vars.add(varname)
+                else:
+                    error("<"+varname+"> should be an identifier")
 
     # Record the first and last line where the id was used
     def seen_at(self, id, linenum):
