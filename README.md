@@ -7,7 +7,29 @@ A woman goes into the grocery and buys a faster computer.
 
 ## Python-based High-Level Assembler
 
-There are many ways to implement High-Level Assembler.
+I already had an idea of making my own [High-Level Assembler][magus].
+But when I started to work on (a secret project), my frustration
+with modern C++ compilers went to the moon. Do you know that there is no
+100% guaranteed way to ask His Majesty to generate CMOV instead of Jxx?
+Or that C++ compilers don't automatically interleave commands from
+different dependency chains?
+
+Frustrated by the lack of control over generated assembler code,
+I returned to the HLA idea, this time with a different approach.
+Since my code was already AVX2-heavy, now I didn't mind about C incompatibility.
+
+What I want now is a good old assembler, plus these features:
+- the usual macro assembler tools: conditional/looped compilation, macroses, EQUs
+- automatic allocation of registers for variables, a la Nvidia PTX or any HLL
+- the ability to interleave commands from different dependency chains
+- C-style syntax, like `ax = bx; ax += bx; ax = bx+cx; ax = pmovmskb xmm1`
+(in addition to the usual asm syntax)
+- expression translator for things like `ax = bx*cx + (dx << 5)`,
+with automatic allocation of registers for temporaries
+- high-level asm operations, like proc/call, if/while
+
+---
+
 This project resembles [PL/I preprocessor], [Crystal], [MetaLua], [Perl ASM], and [Mojo].
 
 Here, Python is used as a compile-time meta-language, employing its loops, subroutines, ifs, variables...
@@ -33,12 +55,18 @@ The features that I currently plan to implement:
 - [ ] formula translator, e.g. `ax = bx*cx + (dx << 5)`
 
 
-### ASM code preprocessing
+
+### NeASM as Python library
+
+
+
+
+### NePP as ASM code preprocessor
 
 You can preprocess an ASM source file with `nepp.py example2.neasm >example2.asm`.
 
 The preprocessor translates an ASM code into a Python program that generates
-the same ASM code using calls to the "asm" function from NeASM.
+the same ASM code using calls to the "asm" function from NeASM library.
 But on top of that, lines starting with "%" are copied as Python statements,
 and texts in braces `{expr}` are copied as Python expressions.
 
@@ -137,10 +165,11 @@ Of course, the code reordering implemented here is very primitive,
 and we hardwired its support into the NeASM core.
 But [the implementation][reordering implementation] took only 10 LOC (!!!),
 while providing a feature that isn't supported by any
-macro assembler (masm, gas, [nasm], [fasm]) I know.
+macro assembler ([masm], gas, [nasm], [fasm]) I know.
 
 
-### Register auto-allocation
+
+### Automatic register allocation
 
 The single most important difference between [HLL] and any [HLA]
 is the automatic allocation of registers for variables.
@@ -227,6 +256,8 @@ mov rax, rax
 
 
 
+[magus]: https://github.com/Bulat-Ziganshin/magus
+
 [PL/I preprocessor]: https://en.wikipedia.org/wiki/PL/I_preprocessor
 [Crystal]: https://crystal-lang.org/reference/1.13/syntax_and_semantics/macros/
 [MetaLua]: http://lua-users.org/wiki/MetaLua
@@ -237,6 +268,7 @@ mov rax, rax
 [HLA]: https://en.wikipedia.org/wiki/High-level_assembler
 [HLL]: https://en.wikipedia.org/wiki/High-level_programming_language
 
+[masm]: https://learn.microsoft.com/en-us/cpp/assembler/masm/directives-reference
 [nasm]: https://www.nasm.us/xdoc/2.16.03/html/nasmdoc4.html
 [fasm]: https://flatassembler.net/docs.php?article=manual
 

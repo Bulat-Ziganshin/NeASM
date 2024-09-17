@@ -61,16 +61,16 @@
 # asm("")
 # asm("pxor src_data, src_data")
 
-
-                                        # PREFETCH equ 16
-
-                                        # hash_table equ r15
-                                        # dict       equ r14
-                                        # pos        equ r13
-                                        # src_mask   equ [rsp+40]
-                                        # hash_mask  equ [rsp+48]
-                                        # match_lens equ rsp+56
-
+                                        #
+                                        # # PREFETCH equ 16
+                                        #
+                                        # # hash_table equ r15
+                                        # # dict       equ r14
+                                        # # pos        equ r13
+                                        # # src_mask   equ [rsp+40]
+                                        # # hash_mask  equ [rsp+48]
+                                        # # match_lens equ rsp+56
+                                        #
                                         # REGISTER src_8_bytes0
                                         # REGISTER src_8_bytes1
                                         # REGISTER src_8_bytes2
@@ -92,12 +92,12 @@ crc32 rbp, rbx                          # crc32 hash_row2, src_8_bytes2
 and rsi, [rsp+48]                       # and hash_row0, hash_mask
 and rdi, [rsp+48]                       # and hash_row1, hash_mask
 and rbp, [rsp+48]                       # and hash_row2, hash_mask
-
+                                        #
 prefetch [r15 + rbp]                    # prefetch [hash_table + hash_row2]   # Prefetch HashTable
-
+                                        #
                                         # YMM_REGISTER src_data
 vmovdqu ymm0, [r14 + r13]               # vmovdqu src_data, [dict + pos]
-
+                                        #
                                         # REGISTER prefetch_addr0
                                         # REGISTER prefetch_addr1
                                         # REGISTER prefetch_addr2
@@ -290,5 +290,5 @@ mov [rsp+56 + 12*8], rax                # mov [match_lens + 12*8], count12
 mov [rsp+56 + 13*8], rdx                # mov [match_lens + 13*8], count13
 mov [rsp+56 + 14*8], rbx                # mov [match_lens + 14*8], count14
 mov [rsp+56 + 15*8], rdi                # mov [match_lens + 15*8], count15
-
+                                        #
 pxor ymm0, ymm0                         # pxor src_data, src_data

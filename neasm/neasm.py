@@ -21,10 +21,27 @@ def clearall():
     # Here we keep the variable->register mapping
     vars = regalloc.RegisterAllocator(reserve = reserve_registers)
 
-# Add one more statement to the last command list
+# Add one more statement to the current command list
 def asm(*args):
     global cmd_lists
-    cmd_lists[-1].append(args)
+    # Combine parts of the command into a single string
+    if len(args) > 1:
+        original_line = args[0] + " " + (",".join(args[1:]))
+    elif len(args) == 1:
+        original_line = args[0]
+    else:
+        original_line = ""
+
+    # Replace an identifier with its EQU definition
+    def replace_equs(matchobj):
+        id = matchobj.group(0)
+        return equ_dict.get(id, id)
+
+    # Save both the full original line (for listing)
+    #   and the active command part after EQU substitutions
+    cmd,_,_ = original_line.partition(cmt_char)
+    cmd = re.sub(r'\w+', replace_equs, cmd)
+    cmd_lists[-1].append((cmd.strip(), original_line))
 
 # Add definition to the EQU list
 def equ(word, replacement):
@@ -38,21 +55,13 @@ def flush():
 
     # The first pass over the program, only executing directives
     for one_list in cmd_lists:
-        for one_command in one_list:
-            # Combine parts of the command into a single string and separate the non-comment part for further processing
-            if len(one_command) > 1:
-                full_line = one_command[0] + " " + (",".join(one_command[1:]))
-            else:
-                full_line = one_command[0]
-            cmd,sep,comment = full_line.partition(cmt_char)
-
+        for cmd,original_line in one_list:
             # Execute REGISTER directive
-            matchobj = re.fullmatch(r'([\S]+)\s+(.*?)\s*', cmd)
+            matchobj = re.fullmatch(r'([\S]+)\s+(.*?)', cmd)
             if matchobj:
                 directive,param = matchobj.group(1,2)
                 directive = directive.lower()
                 if vars.try_process_directive(directive,param):
-                    sep = cmt_char + ' ' + cmd + sep
                     cmd = ""
 
             # Record lines where an identifier was seen
@@ -60,24 +69,20 @@ def flush():
                 id = matchobj.group(0)
                 vars.seen_at(id, linenum)
 
-            program.append(cmd + sep + comment)
+            program.append((cmd,original_line))
             linenum += 1
 
     vars.lifetime_analysis()
 
-    # Replace an identifier with its EQU definition or register name
-    def replace_ids(matchobj):
+    # Replace an identifier with its register name
+    def replace_varnames(matchobj):
         id = matchobj.group(0)
-        return vars.var2reg(equ_dict.get(id, id))
+        return vars.var2reg(id)
 
-    # The second pass over the program, replacing identifiers with their EQU/REGISTER definitions
-    for full_line in program:
-        cmd,sep,comment = full_line.partition(cmt_char)
-        if cmd=="":
-            print("".ljust(40) + sep + comment)
-        else:
-            new_cmd = re.sub(r'\w+', replace_ids, cmd)
-            print(new_cmd.ljust(35) + '     ' + cmt_char + ' ' + cmd + sep + comment)
+    # The second pass over the program, replacing varnames with registers allocated to the vars
+    for cmd,original_line in program:
+        cmd = re.sub(r'\w+', replace_varnames, cmd)
+        print(cmd.ljust(35) + '     ' + cmt_char + ' ' + original_line)
 
     clearall()
 

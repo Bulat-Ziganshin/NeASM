@@ -56,12 +56,12 @@
 # asm("mov counter, counter")
 # asm("mov ptr, ptr")
 
-
+                                        #
 paddq xmm1, xmm0                        # paddq xmm1, xmm0
 paddq xmm2, xmm1                        # paddq xmm2, xmm1
 paddq xmm3, xmm2                        # paddq xmm3, xmm2
 paddq xmm4, xmm3                        # paddq xmm4, xmm3
-
+                                        #
 mov r8, [rbp+64]                        # mov r8, [rbp+64]
 mov r9, [rbp+72]                        # mov r9, [rbp+72]
 mov r10, [rbp+80]                       # mov r10, [rbp+80]
@@ -82,25 +82,25 @@ mov [rbp+64], r8                        # mov [rbp+64], r8
 mov [rbp+72], r9                        # mov [rbp+72], r9
 mov [rbp+80], r10                       # mov [rbp+80], r10
 mov [rbp+88], r11                       # mov [rbp+88], r11
-
+                                        #
 xor si,di                               # xor si,di
 xor di,si                               # xor di,si
 xor si,di                               # xor si,di
-
+                                        #
 xor r8,r10                              # xor r8,r10
 xor r10,r8                              # xor r10,r8
 xor r8,r10                              # xor r8,r10
-
-
-                                        # addr equ EBX
-                                        # value EQU EAX
+                                        #
+                                        #
+                                        # # addr equ EBX
+                                        # # value EQU EAX
 mov [EBX+42], EAX                       # mov [addr+offs], value
-
-                                        ### Variable allocation example
+                                        #
+                                        # ### Variable allocation example
                                         # register ptr, counter, sum
 mov rax, [rsp+40]                       # mov ptr, [rsp+40]
 mov rdx, 16 - 4                         # mov counter, 16 - 4
-
+                                        #
 start:                                  # start:
                                         # register sum0
                                         # register sum1
@@ -120,7 +120,7 @@ mov [rax + rdx*8 + 2*8], rdi            # mov [ptr + counter*8 + 2*8], sum2
 mov [rax + rdx*8 + 3*8], rbp            # mov [ptr + counter*8 + 3*8], sum3
 sub rdx, 4                              # sub counter, 4
 jae start                               # jae start
-
-                                        # Artificially extend variables' lifetime
+                                        #
+                                        # # Artificially extend variables' lifetime
 mov rdx, rdx                            # mov counter, counter
 mov rax, rax                            # mov ptr, ptr
