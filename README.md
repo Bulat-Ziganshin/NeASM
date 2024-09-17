@@ -7,7 +7,7 @@ A woman goes into the grocery and buys a faster computer.
 
 ## Python-based High-Level Assembler
 
-I already had an idea of making my own [High-Level Assembler][magus].
+In the past, I already had an idea of making my own [High-Level Assembler][magus].
 But when I started to work on (a secret project), my frustration
 with modern C++ compilers went to the moon. Do you know that there is no
 100% guaranteed way to ask His Majesty to generate CMOV instead of Jxx?
@@ -16,25 +16,24 @@ different dependency chains?
 
 Frustrated by the lack of control over generated assembler code,
 I returned to the HLA idea, this time with a different approach.
-Since my code was already AVX2-heavy, now I didn't mind about C incompatibility.
+Since my code is already AVX2-heavy, now I don't mind about the C incompatibility.
 
 What I want now is a good old assembler, plus these features:
-- the usual macro assembler tools: conditional/looped compilation, macroses, EQUs
-- automatic allocation of registers for variables, a la Nvidia PTX or any HLL
-- the ability to interleave commands from different dependency chains
-- C-style syntax, like `ax = bx; ax += bx; ax = bx+cx; ax = pmovmskb xmm1`
+- [x] the usual macro assembler tools: conditional/looped compilation, macroses, EQUs
+- [x] automatic allocation of registers for variables, a la Nvidia PTX or any HLL
+- [x] the ability to interleave commands from different dependency chains
+- [ ] C-style syntax, like `ax = bx; ax += bx; ax = bx+cx; ax = pmovmskb xmm1`
 (in addition to the usual asm syntax)
-- expression translator for things like `ax = bx*cx + (dx << 5)`,
+- [ ] expression translator for things like `ax = bx*cx + (dx << 5)`,
 with automatic allocation of registers for temporaries
-- high-level asm operations, like proc/call, if/while
+- [ ] high-level asm operations, like proc/call, if/while
 
 ---
 
 This project resembles [PL/I preprocessor], [Crystal], [MetaLua], [Perl ASM], and [Mojo].
 
-Here, Python is used as a compile-time meta-language, employing its loops, subroutines, ifs, variables...
+We use Python as a compile-time meta-language, employing its loops, subroutines, ifs, variables...
 for dynamic generation of resulting assembler code.
-
 Even the current minimalist implementation allows one to employ the full power of Python to generate assembler code:
 - assign readable names to registers, constants, and memory locations
 - use Python loops to unroll assembler loops
@@ -42,43 +41,72 @@ Even the current minimalist implementation allows one to employ the full power o
 - use Python subroutines with parameters as macro/template/generics facility
 
 ... but we all know that macro-assemblers provide similar features, even if with unusual syntax.
-The real power of NeASM comes from the fact that it's a small Python application (< 1000 LOC),
+The real power of NeASM comes from the fact that it's a tiny Python application (200 LOC as of now),
 so everyone can extend it with new features.
-See e.g. [primitive code reordering ](#primitive-code-reordering)
-that was [implemented][reordering implementation] in 10 LOC (!!!).
-
-The features that I currently plan to implement:
-- [x] ASM code preprocessing
-- [ ] virtual registers (a-la PTX)
-- [ ] automatic code reordering (to interleave dependency chains)
-- [ ] C-style syntax in assembler code, e.g. `ax += bx`
-- [ ] formula translator, e.g. `ax = bx*cx + (dx << 5)`
+See e.g. our simple [code reordering](#code-reordering)
+that is [implemented][reordering implementation] in 20 LOC (!!!).
 
 
 
-### NeASM as Python library
+### NeASM: Python library
+
+Recommended imports:
+```python
+import neasm
+from registers import *
+```
+
+`neasm.asm(str1...)` call adds one ASM line to the program.
+The ASM command can be passed as a single string, or as `asm(cmd,arg1,arg2...)`
+in which case the ASM command is constructed as `cmd arg1, arg2...`.
+All asm() arguments are auto-converted to strings via str().
+
+`neasm.equ(id,text)` defines textual replacement and is described in the next section.
+
+`registers` module provides variables with handy register names
+to use in asm() calls, e.g. `asm("pmovmskb", eax, xmm[1])`.
+
+Automatic register allocation:
+- `myreg = neasm.alloc_reg(typ = 'r')` returns the name of a free register and marks it as used
+- `myreg_list = neasm.alloc_regs(n, typ = 'r')` allocates `n` registers of the same type
+- `neasm.free_reg(myreg1, myreg2...)` returns registers back to the free pool
+
+Use typ=x/y/z to allocate an xmm/ymm/zmm register. Note that all SIMD registers are allocated from
+the single pool, while all GPR registers are allocated from another pool.
+
+Call `alloc_reg` immediately before the first use of a variable, and `free_reg` immediately
+after the last use, so that the same register can be reused for other vars with non-overlapped lifetime.
+When a variable value should be kept between loop iterations, you need to call `alloc_reg` before
+the loop start, and `free_reg` after the loop end, to mark the variable as used
+during the entire loop body. That's because the register allocator reserves a register
+for the span of assembler code lines between `alloc_reg` and `free_reg` calls
+and lacks any code flow analysis.
+
+Note that the automatic register allocation via `REGISTER*` [directives](#automatic-register-allocation)
+operates from the same register pool and thus can't be (easily) used in the same code section as `alloc_reg` operations.
+
+`neasm.flush()` call prints the program assembled so far and clears all the internal
+structures - you may need to execute it between code sections, in particular to clear up
+the allocated registers list.
 
 
 
-
-### NePP as ASM code preprocessor
+### NePP: ASM code preprocessor
 
 You can preprocess an ASM source file with `nepp.py example2.neasm >example2.asm`.
 
 The preprocessor translates an ASM code into a Python program that generates
-the same ASM code using calls to the "asm" function from NeASM library.
+the same ASM code using calls to `neasm.asm(...)`.
 But on top of that, lines starting with "%" are copied as Python statements,
-and texts in braces `{expr}` are copied as Python expressions.
+and texts in braces `{expr}` are evaluated as Python expressions.
 
 E.g., this code (see [example2.neasm]):
-
 ```
 %for n in range(4):
   paddq xmm{n+1}, xmm{n}
 ```
 
-is auto-translated into this Python [code][example2.intermediate]:
-
+is auto-translated into this Python code:
 ```python
 for n in range(4):
   asm("paddq xmm" + str(n+1) + ", xmm" + str(n) + "")
@@ -102,8 +130,8 @@ You can also switch between asm and Python modes using `%asm` and `%python` pseu
 (and then use '%' to invert the mode for a single line) - see [example][asm-python-pseudo-commands].
 
 You can use `neasm.equ(id, replacement)` library call
-or equivalent `id EQU replacement` asm pseudo-command
-to define textual replacements that doesn't need braces around:
+or equivalent `id EQU replacement` NeASM directive
+to define textual replacements that don't need braces around:
 ```
 %equ('offs', 42)
 addr equ EBX
@@ -119,9 +147,9 @@ asm code lines. This dictionary is cleared by the `neasm.flush()` call.
 
 
 
-### Primitive code reordering
+### Code reordering
 
-We have a primitive implementation of automatic code reordering.
+We have a quick-and-dirty implementation of automatic code reordering.
 It just interleaves commands from multiple command streams that you created.
 
 Let's look at an example. This NeASM code:
@@ -161,11 +189,46 @@ creates two extra command streams. On the interleave_streams() call,
 commands from all extra streams are interleaved and added to the main
 command stream.
 
-Of course, the code reordering implemented here is very primitive,
+---
+
+Command prefix `[n]` tells the interleaver how many CPU cycles the command is executed.
+For example, "[4] mov ax,[bx]" means that the delay between this and the next command
+in the same stream is 4 cycles (default value is 1).
+This allows the interleaver to put after a high-latency command more commands
+from other streams.
+
+This also allows more precise, semi-manual control of the interleaving.
+In particular, one can use the `[0]` prefix to ensure that commands
+will be issued back-to-back (and thus immediately free all registers
+occupied by variables used only inside these commands).
+
+You can find creative use of this feature in [lz_match_finder.neasm](examples/lz_match_finder.neasm),
+where in the one set of streams we wrote:
+```
+[0] mov match_addr{n}, [hash_table + hash_row0 + {n}*8]
+[9] vpcmpeqb mask_eq_bytes{n}, src_data, [dict + match_addr{n}]
+```
+
+to ensure that MOV+VPCMPEQB are placed back-to-back,
+thus freeing precious GPRs allocated for `match_addr{n}`.
+
+At the same time, we used `[9]` here to create a large 'hole' for commands
+from another stream once VPCMPEQB is issued. And then we used a combination
+of `[5]` and `[0]` prefixes in another stream to clamp all its commands into this 'hole':
+```
+[5] # Make sure that all the prefetching will take place between VPCMPEQB and the next command
+%for n in range(i, i+LINE):
+    [0] REGISTER prefetch_addr{n}
+    [0] mov prefetch_addr{n}, [hash_table + hash_row1 + {n}*8]
+    [0] prefetch [dict + prefetch_addr{n}]
+    [0] prefetch [dict + prefetch_addr{n} + 31]
+```
+
+Of course, the code reordering implemented so far is primitive,
 and we hardwired its support into the NeASM core.
-But [the implementation][reordering implementation] took only 10 LOC (!!!),
+But [the implementation][reordering implementation] took only 20 LOC (!!!),
 while providing a feature that isn't supported by any
-macro assembler ([masm], gas, [nasm], [fasm]) I know.
+macro assembler ([masm], [gas], [nasm], [fasm]) I know.
 
 
 
@@ -197,7 +260,7 @@ YMM_register match     # match will be placed into YMM register
 ZMM_register result    # result will be placed into ZMM register
 ```
 
-Directive names are case-insensitive, and you can use single or plural form ("register" or "registers").
+Directive names are case-insensitive, and you can use single or plural forms ("register" or "registers").
 One directive can declare multiple variables, comma-separated.
 
 Now, I'm ready to provide [code sample][var-alloc.neasm]:
@@ -253,6 +316,20 @@ mov rax, rax
 
 
 
+### Larger examples
+
+Browse [example3.neasm](examples/example3.neasm) (and [generated code](examples/example3.asm))
+and [lz_match_finder.neasm](examples/lz_match_finder.neasm) (and [generated code](examples/lz_match_finder.asm))
+for larger examples using all the NeASM features - Python-based metaprogramming,
+automatic register allocation, and sophisticated code reordering.
+
+Note that these examples have similar source code,
+but the subtle difference in control directives (in particular, "[n]" command prefixes)
+results in a dramatically different command order in the generated code.
+
+
+
+
 
 
 
@@ -269,14 +346,14 @@ mov rax, rax
 [HLL]: https://en.wikipedia.org/wiki/High-level_programming_language
 
 [masm]: https://learn.microsoft.com/en-us/cpp/assembler/masm/directives-reference
+[gas]:  https://sourceware.org/binutils/docs/as/Pseudo-Ops.html
 [nasm]: https://www.nasm.us/xdoc/2.16.03/html/nasmdoc4.html
 [fasm]: https://flatassembler.net/docs.php?article=manual
 
-[example2.neasm]: https://github.com/Bulat-Ziganshin/NeASM/blob/e242efbd308e9cbd8f0831b3386ee86dfcc1bbdc/example2.neasm#L5-L6
-[example2.intermediate]: https://github.com/Bulat-Ziganshin/NeASM/blob/e242efbd308e9cbd8f0831b3386ee86dfcc1bbdc/example2.asm#L9-L10
-[example2.asm]: https://github.com/Bulat-Ziganshin/NeASM/blob/e242efbd308e9cbd8f0831b3386ee86dfcc1bbdc/example2.asm#L21-L24
+[example2.neasm]: https://github.com/Bulat-Ziganshin/NeASM/blob/15a5e881342e1044b712d768c689f9a7e05740ef/example2.neasm
+[example2.asm]: https://github.com/Bulat-Ziganshin/NeASM/blob/15a5e881342e1044b712d768c689f9a7e05740ef/example2.asm
 [asm-python-pseudo-commands]: https://github.com/Bulat-Ziganshin/NeASM/blob/967e87ab97fa1429f9262e83f36d6913b4fc4759/example2.neasm#L17-L26
-[reordering implementation]: https://github.com/Bulat-Ziganshin/NeASM/commit/e242efbd308e9cbd8f0831b3386ee86dfcc1bbdc#diff-3d0faa46eb38ecc83a9d626adb745b0fb06c0d74a2a6119b88b6403670254341R18-R30
+[reordering implementation]: neasm/neasm.py#L90-L122
 
 [var-alloc.neasm]: https://github.com/Bulat-Ziganshin/NeASM/blob/670d8efa8b320359bbff1bc58da09ea35bc143c5/example2.neasm#L33-L54
 [var-alloc.asm]: https://github.com/Bulat-Ziganshin/NeASM/blob/670d8efa8b320359bbff1bc58da09ea35bc143c5/example2.asm#L98-L117

@@ -94,11 +94,31 @@ def start_new_stream():
 # Interleave commands in extra command streams, and add them to the main stream
 def interleave_streams():
     global cmd_lists
-    res = list(map(list, itertools.zip_longest(*cmd_lists[1:])))
-    for lst in res:
-        for cmd in lst:
-            if cmd:
-                cmd_lists[0].append(cmd)
+
+    program = []
+    for one_list in cmd_lists[1:]:
+        tick = 0
+        for cmd,original_line in one_list:
+            # Command prefix like here - "[4] mov ax,[bx]" means that
+            # the command executes in 4 ticks (default value is 1).
+            # This allows more precise control over interleaving
+            # of commands from different streams.
+            # OTOH, one can use the [0] prefix to ensure that a command sequence
+            # will be issued back-to-back (and thus immediately free
+            # all registers occupied by variables used only inside the sequence).
+            matchobj = re.fullmatch(r'\[(\d+)\]\s*(.*)', cmd)
+            if matchobj:
+                add,cmd = matchobj.group(1,2)
+            else:
+                add = 1
+            program.append((tick, cmd, original_line))
+            tick += int(add)
+
+    # Do ***stable*** sort by CPU tick on which a command should be executed.
+    # This ensures that we can issue commands back-to-back by prefixing them with [0].
+    program.sort(key=lambda tuple: tuple[0])
+    for (tick, cmd, original_line) in program:
+        cmd_lists[0].append((cmd, original_line))
     cmd_lists = cmd_lists[0:1]
 
 

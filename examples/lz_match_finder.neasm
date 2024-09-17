@@ -1,0 +1,69 @@
+%# This is an example of using NeASM as Python-based preprocessor
+%#   for regular assembler code.
+%# Preprocess this file by running `nepp.py lz_match_finder.neasm >lz_match_finder.asm`
+
+PREFETCH equ 16
+%ROWSIZE = 16
+%LINE = 8
+
+REGISTER dict, pos, hash_table
+src_mask   equ [rsp+40]
+hash_mask  equ [rsp+48]
+match_lens equ rsp+56
+
+# Make sure these vars are carried between the loop iterations
+xor dict, dict
+xor pos, pos
+xor hash_table, hash_table
+
+
+LOOP_START:
+%for n in range(3):
+    %start_new_stream()
+    REGISTER src_8_bytes{n}
+    REGISTER hash_row{n}   # 2: Prefetch HashTable, 1: Prefetch Dictionary, 0: Check matches
+    %
+    mov src_8_bytes{n}, [dict + pos + PREFETCH*{n}*64]
+    and src_8_bytes{n}, src_mask
+    xor hash_row{n}, hash_row{n}
+    crc32 hash_row{n}, src_8_bytes{n}
+    and hash_row{n}, hash_mask
+%interleave_streams()
+
+prefetch [hash_table + hash_row2]   # Prefetch HashTable
+
+YMM_REGISTER src_data
+vmovdqu src_data, [dict + pos]
+
+%for i in range(0, ROWSIZE, LINE):
+    %# Prefetch Dictionary
+    %start_new_stream()
+    [5] # Make sure that all the prefetching will take place between VPCMPEQB and the next command
+    %for n in range(i, i+LINE):
+        [0] REGISTER prefetch_addr{n}
+        %
+        [0] mov prefetch_addr{n}, [hash_table + hash_row1 + {n}*8]
+        [0] prefetch [dict + prefetch_addr{n}]
+        [0] prefetch [dict + prefetch_addr{n} + 31]
+    %
+    %# Check matches
+    %for n in range(i, i+LINE):
+        %start_new_stream()
+        [0] REGISTER match_addr{n}, mask_eq_bits{n}, count{n}
+        [0] YMM_REGISTER mask_eq_bytes{n}
+        %
+        [0] mov match_addr{n}, [hash_table + hash_row0 + {n}*8]
+        [9] vpcmpeqb mask_eq_bytes{n}, src_data, [dict + match_addr{n}]
+        vpmovmskb mask_eq_bits{n}, mask_eq_bytes{n}
+        not mask_eq_bits{n}
+        tzcnt count{n}, mask_eq_bits{n}
+        mov [match_lens + {n}*8], count{n}
+    %interleave_streams()
+
+jmp LOOP_START
+
+
+# Make sure these vars are carried between the loop iterations
+xor dict, dict
+xor pos, pos
+xor hash_table, hash_table
