@@ -26,24 +26,17 @@ def preprocess(text, title = ''):
 
         # Add the command intact in the Python mode, or make it asm("...") call in the asm mode
         if python_mode ^ has_prefix:
-            program.append(spaces + cmd)
+            program.append((spaces + cmd).rstrip())
         else:
             # Replace every "{expr}" occurence with result of `expr` evaluated as Python expression
             cmd = re.sub(r'[{](.+?)[}]', r'" + str(\1) + "', cmd)
-            # Execute EQU meta-command
-            matchobj = re.fullmatch(r'([\S]+)\s+([\S]+)\s+(.*)\s*', cmd)
-            if matchobj:
-                id,op,param = matchobj.group(1,2,3)
-                if op.lower()=='equ':
-                    equ(id,param)
-                    cmd = cmt_char + ' ' + cmd
             # Output the final asm command
             program.append(spaces + "asm(\"" + cmd + "\")")
 
     print(title + cmt_char + ' The executed Python code:')
     print(cmt_char)
     for line in program:
-        print(cmt_char + ' ' + line)
+        print(cmt_char + (' ' + line  if line  else ''))
     print()
 
     exec('\n'.join(program))

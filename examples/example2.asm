@@ -28,8 +28,8 @@
 # asm("" + str(xchg(r8,r10)) + "")
 # asm("")
 # equ('offs', 42)
-# asm("# addr equ EBX")
-# asm("# value EQU EAX")
+# asm("addr equ EBX")
+# asm("value EQU EAX")
 # asm("mov [addr+offs], value")
 # asm("")
 # asm("### Variable allocation example")
@@ -56,71 +56,71 @@
 # asm("mov counter, counter")
 # asm("mov ptr, ptr")
 
-                                        #
+
 paddq xmm1, xmm0                        # paddq xmm1, xmm0
 paddq xmm2, xmm1                        # paddq xmm2, xmm1
 paddq xmm3, xmm2                        # paddq xmm3, xmm2
 paddq xmm4, xmm3                        # paddq xmm4, xmm3
-                                        #
-mov r8, [rbp+64]                        # mov r8, [rbp+64]
-mov r9, [rbp+72]                        # mov r9, [rbp+72]
-mov r10, [rbp+80]                       # mov r10, [rbp+80]
-mov r11, [rbp+88]                       # mov r11, [rbp+88]
-vmovdqu ymm8, [r8]                      # vmovdqu ymm8, [r8]
-vmovdqu ymm9, [r9]                      # vmovdqu ymm9, [r9]
-vmovdqu ymm10, [r10]                    # vmovdqu ymm10, [r10]
-vmovdqu ymm11, [r11]                    # vmovdqu ymm11, [r11]
-vpcmpeqb ymm8, ymm0                     # vpcmpeqb ymm8, ymm0
-vpcmpeqb ymm9, ymm0                     # vpcmpeqb ymm9, ymm0
-vpcmpeqb ymm10, ymm0                    # vpcmpeqb ymm10, ymm0
-vpcmpeqb ymm11, ymm0                    # vpcmpeqb ymm11, ymm0
-vpmovmskb r8, ymm8                      # vpmovmskb r8, ymm8
-vpmovmskb r9, ymm9                      # vpmovmskb r9, ymm9
-vpmovmskb r10, ymm10                    # vpmovmskb r10, ymm10
-vpmovmskb r11, ymm11                    # vpmovmskb r11, ymm11
-mov [rbp+64], r8                        # mov [rbp+64], r8
-mov [rbp+72], r9                        # mov [rbp+72], r9
-mov [rbp+80], r10                       # mov [rbp+80], r10
-mov [rbp+88], r11                       # mov [rbp+88], r11
-                                        #
+
+mov r8, [rbp+64]                        # {0} mov r8, [rbp+64]
+mov r9, [rbp+72]                        # {0} mov r9, [rbp+72]
+mov r10, [rbp+80]                       # {0} mov r10, [rbp+80]
+mov r11, [rbp+88]                       # {0} mov r11, [rbp+88]
+vmovdqu ymm8, [r8]                      # {1} vmovdqu ymm8, [r8]
+vmovdqu ymm9, [r9]                      # {1} vmovdqu ymm9, [r9]
+vmovdqu ymm10, [r10]                    # {1} vmovdqu ymm10, [r10]
+vmovdqu ymm11, [r11]                    # {1} vmovdqu ymm11, [r11]
+vpcmpeqb ymm8, ymm0                     # {2} vpcmpeqb ymm8, ymm0
+vpcmpeqb ymm9, ymm0                     # {2} vpcmpeqb ymm9, ymm0
+vpcmpeqb ymm10, ymm0                    # {2} vpcmpeqb ymm10, ymm0
+vpcmpeqb ymm11, ymm0                    # {2} vpcmpeqb ymm11, ymm0
+vpmovmskb r8, ymm8                      # {3} vpmovmskb r8, ymm8
+vpmovmskb r9, ymm9                      # {3} vpmovmskb r9, ymm9
+vpmovmskb r10, ymm10                    # {3} vpmovmskb r10, ymm10
+vpmovmskb r11, ymm11                    # {3} vpmovmskb r11, ymm11
+mov [rbp+64], r8                        # {4} mov [rbp+64], r8
+mov [rbp+72], r9                        # {4} mov [rbp+72], r9
+mov [rbp+80], r10                       # {4} mov [rbp+80], r10
+mov [rbp+88], r11                       # {4} mov [rbp+88], r11
+
 xor si,di                               # xor si,di
 xor di,si                               # xor di,si
 xor si,di                               # xor si,di
-                                        #
+
 xor r8,r10                              # xor r8,r10
 xor r10,r8                              # xor r10,r8
 xor r8,r10                              # xor r8,r10
-                                        #
-                                        #
-                                        # # addr equ EBX
-                                        # # value EQU EAX
+
+
+                                        # addr equ EBX
+                                        # value EQU EAX
 mov [EBX+42], EAX                       # mov [addr+offs], value
-                                        #
+
                                         # ### Variable allocation example
                                         # register ptr, counter, sum
 mov rax, [rsp+40]                       # mov ptr, [rsp+40]
 mov rdx, 16 - 4                         # mov counter, 16 - 4
-                                        #
+
 start:                                  # start:
-                                        # register sum0
-                                        # register sum1
-                                        # register sum2
-                                        # register sum3
-mov rbx, [rax + rdx*8 + 0*8]            # mov sum0, [ptr + counter*8 + 0*8]
-mov rsi, [rax + rdx*8 + 1*8]            # mov sum1, [ptr + counter*8 + 1*8]
-mov rdi, [rax + rdx*8 + 2*8]            # mov sum2, [ptr + counter*8 + 2*8]
-mov rbp, [rax + rdx*8 + 3*8]            # mov sum3, [ptr + counter*8 + 3*8]
-add rbx, rdx                            # add sum0, counter
-lea rsi, [rsi + rdx + 1]                # lea sum1, [sum1 + counter + 1]
-lea rdi, [rdi + rdx + 2]                # lea sum2, [sum2 + counter + 2]
-lea rbp, [rbp + rdx + 3]                # lea sum3, [sum3 + counter + 3]
-mov [rax + rdx*8 + 0*8], rbx            # mov [ptr + counter*8 + 0*8], sum0
-mov [rax + rdx*8 + 1*8], rsi            # mov [ptr + counter*8 + 1*8], sum1
-mov [rax + rdx*8 + 2*8], rdi            # mov [ptr + counter*8 + 2*8], sum2
-mov [rax + rdx*8 + 3*8], rbp            # mov [ptr + counter*8 + 3*8], sum3
+                                        # {0} register sum0
+mov rbx, [rax + rdx*8 + 0*8]            # {0} mov sum0, [ptr + counter*8 + 0*8]
+                                        # {0} register sum1
+mov rsi, [rax + rdx*8 + 1*8]            # {0} mov sum1, [ptr + counter*8 + 1*8]
+                                        # {0} register sum2
+mov rdi, [rax + rdx*8 + 2*8]            # {0} mov sum2, [ptr + counter*8 + 2*8]
+                                        # {0} register sum3
+mov rbp, [rax + rdx*8 + 3*8]            # {0} mov sum3, [ptr + counter*8 + 3*8]
+add rbx, rdx                            # {1} add sum0, counter
+lea rsi, [rsi + rdx + 1]                # {1} lea sum1, [sum1 + counter + 1]
+lea rdi, [rdi + rdx + 2]                # {1} lea sum2, [sum2 + counter + 2]
+lea rbp, [rbp + rdx + 3]                # {1} lea sum3, [sum3 + counter + 3]
+mov [rax + rdx*8 + 0*8], rbx            # {2} mov [ptr + counter*8 + 0*8], sum0
+mov [rax + rdx*8 + 1*8], rsi            # {2} mov [ptr + counter*8 + 1*8], sum1
+mov [rax + rdx*8 + 2*8], rdi            # {2} mov [ptr + counter*8 + 2*8], sum2
+mov [rax + rdx*8 + 3*8], rbp            # {2} mov [ptr + counter*8 + 3*8], sum3
 sub rdx, 4                              # sub counter, 4
 jae start                               # jae start
-                                        #
+
                                         # # Artificially extend variables' lifetime
 mov rdx, rdx                            # mov counter, counter
 mov rax, rax                            # mov ptr, ptr

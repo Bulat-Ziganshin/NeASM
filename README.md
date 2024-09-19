@@ -353,7 +353,7 @@ results in a dramatically different command order in the generated code.
 [example2.neasm]: https://github.com/Bulat-Ziganshin/NeASM/blob/15a5e881342e1044b712d768c689f9a7e05740ef/example2.neasm
 [example2.asm]: https://github.com/Bulat-Ziganshin/NeASM/blob/15a5e881342e1044b712d768c689f9a7e05740ef/example2.asm
 [asm-python-pseudo-commands]: https://github.com/Bulat-Ziganshin/NeASM/blob/967e87ab97fa1429f9262e83f36d6913b4fc4759/example2.neasm#L17-L26
-[reordering implementation]: neasm/neasm.py#L90-L122
+[reordering implementation]: https://github.com/Bulat-Ziganshin/NeASM/blob/fb4d781492d1f5b49a3cbae045ae802e28db7e98/neasm/neasm.py#L90-L122
 
-[var-alloc.neasm]: https://github.com/Bulat-Ziganshin/NeASM/blob/670d8efa8b320359bbff1bc58da09ea35bc143c5/example2.neasm#L33-L54
-[var-alloc.asm]: https://github.com/Bulat-Ziganshin/NeASM/blob/670d8efa8b320359bbff1bc58da09ea35bc143c5/example2.asm#L98-L117
+[var-alloc.neasm]: https://github.com/Bulat-Ziganshin/NeASM/blob/5aa007a73d21d2c9c58cfffd00c234e2ff0fc571/examples/example2.neasm#L33-L55
+[var-alloc.asm]: https://github.com/Bulat-Ziganshin/NeASM/blob/5aa007a73d21d2c9c58cfffd00c234e2ff0fc571/examples/example2.asm#L99-L126

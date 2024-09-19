@@ -6,14 +6,14 @@
 # #   for regular assembler code.
 # # Preprocess this file by running `nepp.py lz_match_finder.neasm >lz_match_finder.asm`
 # asm("")
-# asm("# PREFETCH equ 16")
+# asm("PREFETCH equ 16")
 # ROWSIZE = 16
 # LINE = 8
 # asm("")
 # asm("REGISTER dict, pos, hash_table")
-# asm("# src_mask   equ [rsp+40]")
-# asm("# hash_mask  equ [rsp+48]")
-# asm("# match_lens equ rsp+56")
+# asm("src_mask   equ [rsp+40]")
+# asm("hash_mask  equ [rsp+48]")
+# asm("match_lens equ rsp+56")
 # asm("")
 # asm("# Make sure these vars are carried between the loop iterations")
 # asm("xor dict, dict")
@@ -40,7 +40,7 @@
 # asm("vmovdqu src_data, [dict + pos]")
 # asm("")
 # for i in range(0, ROWSIZE, LINE):
-#     # Prefetch Dictionary
+#     asm("# Prefetch Dictionary")
 #     start_new_stream()
 #     asm("[5] # Make sure that all the prefetching will take place between VPCMPEQB and the next command")
 #     for n in range(i, i+LINE):
@@ -50,7 +50,7 @@
 #         asm("[0] prefetch [dict + prefetch_addr" + str(n) + "]")
 #         asm("[0] prefetch [dict + prefetch_addr" + str(n) + " + 31]")
 #
-#     # Check matches
+#     asm("# Check matches")
 #     for n in range(i, i+LINE):
 #         start_new_stream()
 #         asm("[0] REGISTER match_addr" + str(n) + ", mask_eq_bits" + str(n) + ", count" + str(n) + "")
@@ -72,246 +72,250 @@
 # asm("xor pos, pos")
 # asm("xor hash_table, hash_table")
 
-                                        #
-                                        # # PREFETCH equ 16
-                                        #
+
+                                        # PREFETCH equ 16
+
                                         # REGISTER dict, pos, hash_table
-                                        # # src_mask   equ [rsp+40]
-                                        # # hash_mask  equ [rsp+48]
-                                        # # match_lens equ rsp+56
-                                        #
+                                        # src_mask   equ [rsp+40]
+                                        # hash_mask  equ [rsp+48]
+                                        # match_lens equ rsp+56
+
                                         # # Make sure these vars are carried between the loop iterations
 xor rax, rax                            # xor dict, dict
 xor rdx, rdx                            # xor pos, pos
 xor rbx, rbx                            # xor hash_table, hash_table
-                                        #
-                                        #
+
+
 LOOP_START:                             # LOOP_START:
-                                        # REGISTER src_8_bytes0
-                                        # REGISTER src_8_bytes1
-                                        # REGISTER src_8_bytes2
-                                        # REGISTER hash_row0   # 2: Prefetch HashTable, 1: Prefetch Dictionary, 0: Check matches
-                                        # REGISTER hash_row1   # 2: Prefetch HashTable, 1: Prefetch Dictionary, 0: Check matches
-                                        # REGISTER hash_row2   # 2: Prefetch HashTable, 1: Prefetch Dictionary, 0: Check matches
-mov rsi, [rax + rdx + 16*0*64]          # mov src_8_bytes0, [dict + pos + PREFETCH*0*64]
-mov rdi, [rax + rdx + 16*1*64]          # mov src_8_bytes1, [dict + pos + PREFETCH*1*64]
-mov rbp, [rax + rdx + 16*2*64]          # mov src_8_bytes2, [dict + pos + PREFETCH*2*64]
-and rsi, [rsp+40]                       # and src_8_bytes0, src_mask
-and rdi, [rsp+40]                       # and src_8_bytes1, src_mask
-and rbp, [rsp+40]                       # and src_8_bytes2, src_mask
-xor r8, r8                              # xor hash_row0, hash_row0
-xor r9, r9                              # xor hash_row1, hash_row1
-xor r10, r10                            # xor hash_row2, hash_row2
-crc32 r8, rsi                           # crc32 hash_row0, src_8_bytes0
-crc32 r9, rdi                           # crc32 hash_row1, src_8_bytes1
-crc32 r10, rbp                          # crc32 hash_row2, src_8_bytes2
-and r8, [rsp+48]                        # and hash_row0, hash_mask
-and r9, [rsp+48]                        # and hash_row1, hash_mask
-and r10, [rsp+48]                       # and hash_row2, hash_mask
-                                        #
+                                        # {0} REGISTER src_8_bytes0
+                                        # {0} REGISTER hash_row0   # 2: Prefetch HashTable, 1: Prefetch Dictionary, 0: Check matches
+mov rsi, [rax + rdx + 16*0*64]          # {0} mov src_8_bytes0, [dict + pos + PREFETCH*0*64]
+                                        # {0} REGISTER src_8_bytes1
+                                        # {0} REGISTER hash_row1   # 2: Prefetch HashTable, 1: Prefetch Dictionary, 0: Check matches
+mov rdi, [rax + rdx + 16*1*64]          # {0} mov src_8_bytes1, [dict + pos + PREFETCH*1*64]
+                                        # {0} REGISTER src_8_bytes2
+                                        # {0} REGISTER hash_row2   # 2: Prefetch HashTable, 1: Prefetch Dictionary, 0: Check matches
+mov rbp, [rax + rdx + 16*2*64]          # {0} mov src_8_bytes2, [dict + pos + PREFETCH*2*64]
+and rsi, [rsp+40]                       # {1} and src_8_bytes0, src_mask
+and rdi, [rsp+40]                       # {1} and src_8_bytes1, src_mask
+and rbp, [rsp+40]                       # {1} and src_8_bytes2, src_mask
+xor r8, r8                              # {2} xor hash_row0, hash_row0
+xor r9, r9                              # {2} xor hash_row1, hash_row1
+xor r10, r10                            # {2} xor hash_row2, hash_row2
+crc32 r8, rsi                           # {3} crc32 hash_row0, src_8_bytes0
+crc32 r9, rdi                           # {3} crc32 hash_row1, src_8_bytes1
+crc32 r10, rbp                          # {3} crc32 hash_row2, src_8_bytes2
+and r8, [rsp+48]                        # {4} and hash_row0, hash_mask
+and r9, [rsp+48]                        # {4} and hash_row1, hash_mask
+and r10, [rsp+48]                       # {4} and hash_row2, hash_mask
+
 prefetch [rbx + r10]                    # prefetch [hash_table + hash_row2]   # Prefetch HashTable
-                                        #
+
                                         # YMM_REGISTER src_data
 vmovdqu ymm0, [rax + rdx]               # vmovdqu src_data, [dict + pos]
-                                        #
-                                        # [5] # Make sure that all the prefetching will take place between VPCMPEQB and the next command
-                                        # [0] REGISTER match_addr0, mask_eq_bits0, count0
-                                        # [0] YMM_REGISTER mask_eq_bytes0
-mov r10, [rbx + r8 + 0*8]               # [0] mov match_addr0, [hash_table + hash_row0 + 0*8]
-vpcmpeqb ymm1, ymm0, [rax + r10]        # [9] vpcmpeqb mask_eq_bytes0, src_data, [dict + match_addr0]
-                                        # [0] REGISTER match_addr1, mask_eq_bits1, count1
-                                        # [0] YMM_REGISTER mask_eq_bytes1
-mov r10, [rbx + r8 + 1*8]               # [0] mov match_addr1, [hash_table + hash_row0 + 1*8]
-vpcmpeqb ymm2, ymm0, [rax + r10]        # [9] vpcmpeqb mask_eq_bytes1, src_data, [dict + match_addr1]
-                                        # [0] REGISTER match_addr2, mask_eq_bits2, count2
-                                        # [0] YMM_REGISTER mask_eq_bytes2
-mov r10, [rbx + r8 + 2*8]               # [0] mov match_addr2, [hash_table + hash_row0 + 2*8]
-vpcmpeqb ymm3, ymm0, [rax + r10]        # [9] vpcmpeqb mask_eq_bytes2, src_data, [dict + match_addr2]
-                                        # [0] REGISTER match_addr3, mask_eq_bits3, count3
-                                        # [0] YMM_REGISTER mask_eq_bytes3
-mov r10, [rbx + r8 + 3*8]               # [0] mov match_addr3, [hash_table + hash_row0 + 3*8]
-vpcmpeqb ymm4, ymm0, [rax + r10]        # [9] vpcmpeqb mask_eq_bytes3, src_data, [dict + match_addr3]
-                                        # [0] REGISTER match_addr4, mask_eq_bits4, count4
-                                        # [0] YMM_REGISTER mask_eq_bytes4
-mov r10, [rbx + r8 + 4*8]               # [0] mov match_addr4, [hash_table + hash_row0 + 4*8]
-vpcmpeqb ymm5, ymm0, [rax + r10]        # [9] vpcmpeqb mask_eq_bytes4, src_data, [dict + match_addr4]
-                                        # [0] REGISTER match_addr5, mask_eq_bits5, count5
-                                        # [0] YMM_REGISTER mask_eq_bytes5
-mov r10, [rbx + r8 + 5*8]               # [0] mov match_addr5, [hash_table + hash_row0 + 5*8]
-vpcmpeqb ymm6, ymm0, [rax + r10]        # [9] vpcmpeqb mask_eq_bytes5, src_data, [dict + match_addr5]
-                                        # [0] REGISTER match_addr6, mask_eq_bits6, count6
-                                        # [0] YMM_REGISTER mask_eq_bytes6
-mov r10, [rbx + r8 + 6*8]               # [0] mov match_addr6, [hash_table + hash_row0 + 6*8]
-vpcmpeqb ymm7, ymm0, [rax + r10]        # [9] vpcmpeqb mask_eq_bytes6, src_data, [dict + match_addr6]
-                                        # [0] REGISTER match_addr7, mask_eq_bits7, count7
-                                        # [0] YMM_REGISTER mask_eq_bytes7
-mov r10, [rbx + r8 + 7*8]               # [0] mov match_addr7, [hash_table + hash_row0 + 7*8]
-vpcmpeqb ymm8, ymm0, [rax + r10]        # [9] vpcmpeqb mask_eq_bytes7, src_data, [dict + match_addr7]
-                                        # [0] REGISTER prefetch_addr0
-mov r10, [rbx + r9 + 0*8]               # [0] mov prefetch_addr0, [hash_table + hash_row1 + 0*8]
-prefetch [rax + r10]                    # [0] prefetch [dict + prefetch_addr0]
-prefetch [rax + r10 + 31]               # [0] prefetch [dict + prefetch_addr0 + 31]
-                                        # [0] REGISTER prefetch_addr1
-mov r10, [rbx + r9 + 1*8]               # [0] mov prefetch_addr1, [hash_table + hash_row1 + 1*8]
-prefetch [rax + r10]                    # [0] prefetch [dict + prefetch_addr1]
-prefetch [rax + r10 + 31]               # [0] prefetch [dict + prefetch_addr1 + 31]
-                                        # [0] REGISTER prefetch_addr2
-mov r10, [rbx + r9 + 2*8]               # [0] mov prefetch_addr2, [hash_table + hash_row1 + 2*8]
-prefetch [rax + r10]                    # [0] prefetch [dict + prefetch_addr2]
-prefetch [rax + r10 + 31]               # [0] prefetch [dict + prefetch_addr2 + 31]
-                                        # [0] REGISTER prefetch_addr3
-mov r10, [rbx + r9 + 3*8]               # [0] mov prefetch_addr3, [hash_table + hash_row1 + 3*8]
-prefetch [rax + r10]                    # [0] prefetch [dict + prefetch_addr3]
-prefetch [rax + r10 + 31]               # [0] prefetch [dict + prefetch_addr3 + 31]
-                                        # [0] REGISTER prefetch_addr4
-mov r10, [rbx + r9 + 4*8]               # [0] mov prefetch_addr4, [hash_table + hash_row1 + 4*8]
-prefetch [rax + r10]                    # [0] prefetch [dict + prefetch_addr4]
-prefetch [rax + r10 + 31]               # [0] prefetch [dict + prefetch_addr4 + 31]
-                                        # [0] REGISTER prefetch_addr5
-mov r10, [rbx + r9 + 5*8]               # [0] mov prefetch_addr5, [hash_table + hash_row1 + 5*8]
-prefetch [rax + r10]                    # [0] prefetch [dict + prefetch_addr5]
-prefetch [rax + r10 + 31]               # [0] prefetch [dict + prefetch_addr5 + 31]
-                                        # [0] REGISTER prefetch_addr6
-mov r10, [rbx + r9 + 6*8]               # [0] mov prefetch_addr6, [hash_table + hash_row1 + 6*8]
-prefetch [rax + r10]                    # [0] prefetch [dict + prefetch_addr6]
-prefetch [rax + r10 + 31]               # [0] prefetch [dict + prefetch_addr6 + 31]
-                                        # [0] REGISTER prefetch_addr7
-mov r10, [rbx + r9 + 7*8]               # [0] mov prefetch_addr7, [hash_table + hash_row1 + 7*8]
-prefetch [rax + r10]                    # [0] prefetch [dict + prefetch_addr7]
-prefetch [rax + r10 + 31]               # [0] prefetch [dict + prefetch_addr7 + 31]
-vpmovmskb r10, ymm1                     # vpmovmskb mask_eq_bits0, mask_eq_bytes0
-vpmovmskb rbp, ymm2                     # vpmovmskb mask_eq_bits1, mask_eq_bytes1
-vpmovmskb rdi, ymm3                     # vpmovmskb mask_eq_bits2, mask_eq_bytes2
-vpmovmskb rsi, ymm4                     # vpmovmskb mask_eq_bits3, mask_eq_bytes3
-vpmovmskb r11, ymm5                     # vpmovmskb mask_eq_bits4, mask_eq_bytes4
-vpmovmskb r12, ymm6                     # vpmovmskb mask_eq_bits5, mask_eq_bytes5
-vpmovmskb r13, ymm7                     # vpmovmskb mask_eq_bits6, mask_eq_bytes6
-vpmovmskb r14, ymm8                     # vpmovmskb mask_eq_bits7, mask_eq_bytes7
-not r10                                 # not mask_eq_bits0
-not rbp                                 # not mask_eq_bits1
-not rdi                                 # not mask_eq_bits2
-not rsi                                 # not mask_eq_bits3
-not r11                                 # not mask_eq_bits4
-not r12                                 # not mask_eq_bits5
-not r13                                 # not mask_eq_bits6
-not r14                                 # not mask_eq_bits7
-tzcnt r10, r10                          # tzcnt count0, mask_eq_bits0
-tzcnt rbp, rbp                          # tzcnt count1, mask_eq_bits1
-tzcnt rdi, rdi                          # tzcnt count2, mask_eq_bits2
-tzcnt rsi, rsi                          # tzcnt count3, mask_eq_bits3
-tzcnt r11, r11                          # tzcnt count4, mask_eq_bits4
-tzcnt r12, r12                          # tzcnt count5, mask_eq_bits5
-tzcnt r13, r13                          # tzcnt count6, mask_eq_bits6
-tzcnt r14, r14                          # tzcnt count7, mask_eq_bits7
-mov [rsp+56 + 0*8], r10                 # mov [match_lens + 0*8], count0
-mov [rsp+56 + 1*8], rbp                 # mov [match_lens + 1*8], count1
-mov [rsp+56 + 2*8], rdi                 # mov [match_lens + 2*8], count2
-mov [rsp+56 + 3*8], rsi                 # mov [match_lens + 3*8], count3
-mov [rsp+56 + 4*8], r11                 # mov [match_lens + 4*8], count4
-mov [rsp+56 + 5*8], r12                 # mov [match_lens + 5*8], count5
-mov [rsp+56 + 6*8], r13                 # mov [match_lens + 6*8], count6
-mov [rsp+56 + 7*8], r14                 # mov [match_lens + 7*8], count7
-                                        # [5] # Make sure that all the prefetching will take place between VPCMPEQB and the next command
-                                        # [0] REGISTER match_addr8, mask_eq_bits8, count8
-                                        # [0] YMM_REGISTER mask_eq_bytes8
-mov r14, [rbx + r8 + 8*8]               # [0] mov match_addr8, [hash_table + hash_row0 + 8*8]
-vpcmpeqb ymm8, ymm0, [rax + r14]        # [9] vpcmpeqb mask_eq_bytes8, src_data, [dict + match_addr8]
-                                        # [0] REGISTER match_addr9, mask_eq_bits9, count9
-                                        # [0] YMM_REGISTER mask_eq_bytes9
-mov r14, [rbx + r8 + 9*8]               # [0] mov match_addr9, [hash_table + hash_row0 + 9*8]
-vpcmpeqb ymm7, ymm0, [rax + r14]        # [9] vpcmpeqb mask_eq_bytes9, src_data, [dict + match_addr9]
-                                        # [0] REGISTER match_addr10, mask_eq_bits10, count10
-                                        # [0] YMM_REGISTER mask_eq_bytes10
-mov r14, [rbx + r8 + 10*8]              # [0] mov match_addr10, [hash_table + hash_row0 + 10*8]
-vpcmpeqb ymm6, ymm0, [rax + r14]        # [9] vpcmpeqb mask_eq_bytes10, src_data, [dict + match_addr10]
-                                        # [0] REGISTER match_addr11, mask_eq_bits11, count11
-                                        # [0] YMM_REGISTER mask_eq_bytes11
-mov r14, [rbx + r8 + 11*8]              # [0] mov match_addr11, [hash_table + hash_row0 + 11*8]
-vpcmpeqb ymm5, ymm0, [rax + r14]        # [9] vpcmpeqb mask_eq_bytes11, src_data, [dict + match_addr11]
-                                        # [0] REGISTER match_addr12, mask_eq_bits12, count12
-                                        # [0] YMM_REGISTER mask_eq_bytes12
-mov r14, [rbx + r8 + 12*8]              # [0] mov match_addr12, [hash_table + hash_row0 + 12*8]
-vpcmpeqb ymm4, ymm0, [rax + r14]        # [9] vpcmpeqb mask_eq_bytes12, src_data, [dict + match_addr12]
-                                        # [0] REGISTER match_addr13, mask_eq_bits13, count13
-                                        # [0] YMM_REGISTER mask_eq_bytes13
-mov r14, [rbx + r8 + 13*8]              # [0] mov match_addr13, [hash_table + hash_row0 + 13*8]
-vpcmpeqb ymm3, ymm0, [rax + r14]        # [9] vpcmpeqb mask_eq_bytes13, src_data, [dict + match_addr13]
-                                        # [0] REGISTER match_addr14, mask_eq_bits14, count14
-                                        # [0] YMM_REGISTER mask_eq_bytes14
-mov r14, [rbx + r8 + 14*8]              # [0] mov match_addr14, [hash_table + hash_row0 + 14*8]
-vpcmpeqb ymm2, ymm0, [rax + r14]        # [9] vpcmpeqb mask_eq_bytes14, src_data, [dict + match_addr14]
-                                        # [0] REGISTER match_addr15, mask_eq_bits15, count15
-                                        # [0] YMM_REGISTER mask_eq_bytes15
-mov r8, [rbx + r8 + 15*8]               # [0] mov match_addr15, [hash_table + hash_row0 + 15*8]
-vpcmpeqb ymm0, ymm0, [rax + r8]         # [9] vpcmpeqb mask_eq_bytes15, src_data, [dict + match_addr15]
-                                        # [0] REGISTER prefetch_addr8
-mov r8, [rbx + r9 + 8*8]                # [0] mov prefetch_addr8, [hash_table + hash_row1 + 8*8]
-prefetch [rax + r8]                     # [0] prefetch [dict + prefetch_addr8]
-prefetch [rax + r8 + 31]                # [0] prefetch [dict + prefetch_addr8 + 31]
-                                        # [0] REGISTER prefetch_addr9
-mov r8, [rbx + r9 + 9*8]                # [0] mov prefetch_addr9, [hash_table + hash_row1 + 9*8]
-prefetch [rax + r8]                     # [0] prefetch [dict + prefetch_addr9]
-prefetch [rax + r8 + 31]                # [0] prefetch [dict + prefetch_addr9 + 31]
-                                        # [0] REGISTER prefetch_addr10
-mov r8, [rbx + r9 + 10*8]               # [0] mov prefetch_addr10, [hash_table + hash_row1 + 10*8]
-prefetch [rax + r8]                     # [0] prefetch [dict + prefetch_addr10]
-prefetch [rax + r8 + 31]                # [0] prefetch [dict + prefetch_addr10 + 31]
-                                        # [0] REGISTER prefetch_addr11
-mov r8, [rbx + r9 + 11*8]               # [0] mov prefetch_addr11, [hash_table + hash_row1 + 11*8]
-prefetch [rax + r8]                     # [0] prefetch [dict + prefetch_addr11]
-prefetch [rax + r8 + 31]                # [0] prefetch [dict + prefetch_addr11 + 31]
-                                        # [0] REGISTER prefetch_addr12
-mov r8, [rbx + r9 + 12*8]               # [0] mov prefetch_addr12, [hash_table + hash_row1 + 12*8]
-prefetch [rax + r8]                     # [0] prefetch [dict + prefetch_addr12]
-prefetch [rax + r8 + 31]                # [0] prefetch [dict + prefetch_addr12 + 31]
-                                        # [0] REGISTER prefetch_addr13
-mov r8, [rbx + r9 + 13*8]               # [0] mov prefetch_addr13, [hash_table + hash_row1 + 13*8]
-prefetch [rax + r8]                     # [0] prefetch [dict + prefetch_addr13]
-prefetch [rax + r8 + 31]                # [0] prefetch [dict + prefetch_addr13 + 31]
-                                        # [0] REGISTER prefetch_addr14
-mov r8, [rbx + r9 + 14*8]               # [0] mov prefetch_addr14, [hash_table + hash_row1 + 14*8]
-prefetch [rax + r8]                     # [0] prefetch [dict + prefetch_addr14]
-prefetch [rax + r8 + 31]                # [0] prefetch [dict + prefetch_addr14 + 31]
-                                        # [0] REGISTER prefetch_addr15
-mov r9, [rbx + r9 + 15*8]               # [0] mov prefetch_addr15, [hash_table + hash_row1 + 15*8]
-prefetch [rax + r9]                     # [0] prefetch [dict + prefetch_addr15]
-prefetch [rax + r9 + 31]                # [0] prefetch [dict + prefetch_addr15 + 31]
-vpmovmskb r9, ymm8                      # vpmovmskb mask_eq_bits8, mask_eq_bytes8
-vpmovmskb r8, ymm7                      # vpmovmskb mask_eq_bits9, mask_eq_bytes9
-vpmovmskb r14, ymm6                     # vpmovmskb mask_eq_bits10, mask_eq_bytes10
-vpmovmskb r13, ymm5                     # vpmovmskb mask_eq_bits11, mask_eq_bytes11
-vpmovmskb r12, ymm4                     # vpmovmskb mask_eq_bits12, mask_eq_bytes12
-vpmovmskb r11, ymm3                     # vpmovmskb mask_eq_bits13, mask_eq_bytes13
-vpmovmskb rsi, ymm2                     # vpmovmskb mask_eq_bits14, mask_eq_bytes14
-vpmovmskb rdi, ymm0                     # vpmovmskb mask_eq_bits15, mask_eq_bytes15
-not r9                                  # not mask_eq_bits8
-not r8                                  # not mask_eq_bits9
-not r14                                 # not mask_eq_bits10
-not r13                                 # not mask_eq_bits11
-not r12                                 # not mask_eq_bits12
-not r11                                 # not mask_eq_bits13
-not rsi                                 # not mask_eq_bits14
-not rdi                                 # not mask_eq_bits15
-tzcnt r9, r9                            # tzcnt count8, mask_eq_bits8
-tzcnt r8, r8                            # tzcnt count9, mask_eq_bits9
-tzcnt r14, r14                          # tzcnt count10, mask_eq_bits10
-tzcnt r13, r13                          # tzcnt count11, mask_eq_bits11
-tzcnt r12, r12                          # tzcnt count12, mask_eq_bits12
-tzcnt r11, r11                          # tzcnt count13, mask_eq_bits13
-tzcnt rsi, rsi                          # tzcnt count14, mask_eq_bits14
-tzcnt rdi, rdi                          # tzcnt count15, mask_eq_bits15
-mov [rsp+56 + 8*8], r9                  # mov [match_lens + 8*8], count8
-mov [rsp+56 + 9*8], r8                  # mov [match_lens + 9*8], count9
-mov [rsp+56 + 10*8], r14                # mov [match_lens + 10*8], count10
-mov [rsp+56 + 11*8], r13                # mov [match_lens + 11*8], count11
-mov [rsp+56 + 12*8], r12                # mov [match_lens + 12*8], count12
-mov [rsp+56 + 13*8], r11                # mov [match_lens + 13*8], count13
-mov [rsp+56 + 14*8], rsi                # mov [match_lens + 14*8], count14
-mov [rsp+56 + 15*8], rdi                # mov [match_lens + 15*8], count15
-                                        #
+
+                                        # # Prefetch Dictionary
+                                        # {0} [5] # Make sure that all the prefetching will take place between VPCMPEQB and the next command
+                                        # {0} [0] REGISTER match_addr0, mask_eq_bits0, count0
+                                        # {0} [0] YMM_REGISTER mask_eq_bytes0
+mov r10, [rbx + r8 + 0*8]               # {0} [0] mov match_addr0, [hash_table + hash_row0 + 0*8]
+vpcmpeqb ymm1, ymm0, [rax + r10]        # {0} [9] vpcmpeqb mask_eq_bytes0, src_data, [dict + match_addr0]
+                                        # {0} [0] REGISTER match_addr1, mask_eq_bits1, count1
+                                        # {0} [0] YMM_REGISTER mask_eq_bytes1
+mov r10, [rbx + r8 + 1*8]               # {0} [0] mov match_addr1, [hash_table + hash_row0 + 1*8]
+vpcmpeqb ymm2, ymm0, [rax + r10]        # {0} [9] vpcmpeqb mask_eq_bytes1, src_data, [dict + match_addr1]
+                                        # {0} [0] REGISTER match_addr2, mask_eq_bits2, count2
+                                        # {0} [0] YMM_REGISTER mask_eq_bytes2
+mov r10, [rbx + r8 + 2*8]               # {0} [0] mov match_addr2, [hash_table + hash_row0 + 2*8]
+vpcmpeqb ymm3, ymm0, [rax + r10]        # {0} [9] vpcmpeqb mask_eq_bytes2, src_data, [dict + match_addr2]
+                                        # {0} [0] REGISTER match_addr3, mask_eq_bits3, count3
+                                        # {0} [0] YMM_REGISTER mask_eq_bytes3
+mov r10, [rbx + r8 + 3*8]               # {0} [0] mov match_addr3, [hash_table + hash_row0 + 3*8]
+vpcmpeqb ymm4, ymm0, [rax + r10]        # {0} [9] vpcmpeqb mask_eq_bytes3, src_data, [dict + match_addr3]
+                                        # {0} [0] REGISTER match_addr4, mask_eq_bits4, count4
+                                        # {0} [0] YMM_REGISTER mask_eq_bytes4
+mov r10, [rbx + r8 + 4*8]               # {0} [0] mov match_addr4, [hash_table + hash_row0 + 4*8]
+vpcmpeqb ymm5, ymm0, [rax + r10]        # {0} [9] vpcmpeqb mask_eq_bytes4, src_data, [dict + match_addr4]
+                                        # {0} [0] REGISTER match_addr5, mask_eq_bits5, count5
+                                        # {0} [0] YMM_REGISTER mask_eq_bytes5
+mov r10, [rbx + r8 + 5*8]               # {0} [0] mov match_addr5, [hash_table + hash_row0 + 5*8]
+vpcmpeqb ymm6, ymm0, [rax + r10]        # {0} [9] vpcmpeqb mask_eq_bytes5, src_data, [dict + match_addr5]
+                                        # {0} [0] REGISTER match_addr6, mask_eq_bits6, count6
+                                        # {0} [0] YMM_REGISTER mask_eq_bytes6
+mov r10, [rbx + r8 + 6*8]               # {0} [0] mov match_addr6, [hash_table + hash_row0 + 6*8]
+vpcmpeqb ymm7, ymm0, [rax + r10]        # {0} [9] vpcmpeqb mask_eq_bytes6, src_data, [dict + match_addr6]
+                                        # {0} [0] REGISTER match_addr7, mask_eq_bits7, count7
+                                        # {0} [0] YMM_REGISTER mask_eq_bytes7
+mov r10, [rbx + r8 + 7*8]               # {0} [0] mov match_addr7, [hash_table + hash_row0 + 7*8]
+vpcmpeqb ymm8, ymm0, [rax + r10]        # {0} [9] vpcmpeqb mask_eq_bytes7, src_data, [dict + match_addr7]
+                                        # {5} [0] REGISTER prefetch_addr0
+mov r10, [rbx + r9 + 0*8]               # {5} [0] mov prefetch_addr0, [hash_table + hash_row1 + 0*8]
+prefetch [rax + r10]                    # {5} [0] prefetch [dict + prefetch_addr0]
+prefetch [rax + r10 + 31]               # {5} [0] prefetch [dict + prefetch_addr0 + 31]
+                                        # {5} [0] REGISTER prefetch_addr1
+mov r10, [rbx + r9 + 1*8]               # {5} [0] mov prefetch_addr1, [hash_table + hash_row1 + 1*8]
+prefetch [rax + r10]                    # {5} [0] prefetch [dict + prefetch_addr1]
+prefetch [rax + r10 + 31]               # {5} [0] prefetch [dict + prefetch_addr1 + 31]
+                                        # {5} [0] REGISTER prefetch_addr2
+mov r10, [rbx + r9 + 2*8]               # {5} [0] mov prefetch_addr2, [hash_table + hash_row1 + 2*8]
+prefetch [rax + r10]                    # {5} [0] prefetch [dict + prefetch_addr2]
+prefetch [rax + r10 + 31]               # {5} [0] prefetch [dict + prefetch_addr2 + 31]
+                                        # {5} [0] REGISTER prefetch_addr3
+mov r10, [rbx + r9 + 3*8]               # {5} [0] mov prefetch_addr3, [hash_table + hash_row1 + 3*8]
+prefetch [rax + r10]                    # {5} [0] prefetch [dict + prefetch_addr3]
+prefetch [rax + r10 + 31]               # {5} [0] prefetch [dict + prefetch_addr3 + 31]
+                                        # {5} [0] REGISTER prefetch_addr4
+mov r10, [rbx + r9 + 4*8]               # {5} [0] mov prefetch_addr4, [hash_table + hash_row1 + 4*8]
+prefetch [rax + r10]                    # {5} [0] prefetch [dict + prefetch_addr4]
+prefetch [rax + r10 + 31]               # {5} [0] prefetch [dict + prefetch_addr4 + 31]
+                                        # {5} [0] REGISTER prefetch_addr5
+mov r10, [rbx + r9 + 5*8]               # {5} [0] mov prefetch_addr5, [hash_table + hash_row1 + 5*8]
+prefetch [rax + r10]                    # {5} [0] prefetch [dict + prefetch_addr5]
+prefetch [rax + r10 + 31]               # {5} [0] prefetch [dict + prefetch_addr5 + 31]
+                                        # {5} [0] REGISTER prefetch_addr6
+mov r10, [rbx + r9 + 6*8]               # {5} [0] mov prefetch_addr6, [hash_table + hash_row1 + 6*8]
+prefetch [rax + r10]                    # {5} [0] prefetch [dict + prefetch_addr6]
+prefetch [rax + r10 + 31]               # {5} [0] prefetch [dict + prefetch_addr6 + 31]
+                                        # {5} [0] REGISTER prefetch_addr7
+mov r10, [rbx + r9 + 7*8]               # {5} [0] mov prefetch_addr7, [hash_table + hash_row1 + 7*8]
+prefetch [rax + r10]                    # {5} [0] prefetch [dict + prefetch_addr7]
+prefetch [rax + r10 + 31]               # {5} [0] prefetch [dict + prefetch_addr7 + 31]
+                                        # {5} # Check matches
+vpmovmskb r10, ymm1                     # {9} vpmovmskb mask_eq_bits0, mask_eq_bytes0
+vpmovmskb rbp, ymm2                     # {9} vpmovmskb mask_eq_bits1, mask_eq_bytes1
+vpmovmskb rdi, ymm3                     # {9} vpmovmskb mask_eq_bits2, mask_eq_bytes2
+vpmovmskb rsi, ymm4                     # {9} vpmovmskb mask_eq_bits3, mask_eq_bytes3
+vpmovmskb r11, ymm5                     # {9} vpmovmskb mask_eq_bits4, mask_eq_bytes4
+vpmovmskb r12, ymm6                     # {9} vpmovmskb mask_eq_bits5, mask_eq_bytes5
+vpmovmskb r13, ymm7                     # {9} vpmovmskb mask_eq_bits6, mask_eq_bytes6
+vpmovmskb r14, ymm8                     # {9} vpmovmskb mask_eq_bits7, mask_eq_bytes7
+not r10                                 # {10} not mask_eq_bits0
+not rbp                                 # {10} not mask_eq_bits1
+not rdi                                 # {10} not mask_eq_bits2
+not rsi                                 # {10} not mask_eq_bits3
+not r11                                 # {10} not mask_eq_bits4
+not r12                                 # {10} not mask_eq_bits5
+not r13                                 # {10} not mask_eq_bits6
+not r14                                 # {10} not mask_eq_bits7
+tzcnt r10, r10                          # {11} tzcnt count0, mask_eq_bits0
+tzcnt rbp, rbp                          # {11} tzcnt count1, mask_eq_bits1
+tzcnt rdi, rdi                          # {11} tzcnt count2, mask_eq_bits2
+tzcnt rsi, rsi                          # {11} tzcnt count3, mask_eq_bits3
+tzcnt r11, r11                          # {11} tzcnt count4, mask_eq_bits4
+tzcnt r12, r12                          # {11} tzcnt count5, mask_eq_bits5
+tzcnt r13, r13                          # {11} tzcnt count6, mask_eq_bits6
+tzcnt r14, r14                          # {11} tzcnt count7, mask_eq_bits7
+mov [rsp+56 + 0*8], r10                 # {12} mov [match_lens + 0*8], count0
+mov [rsp+56 + 1*8], rbp                 # {12} mov [match_lens + 1*8], count1
+mov [rsp+56 + 2*8], rdi                 # {12} mov [match_lens + 2*8], count2
+mov [rsp+56 + 3*8], rsi                 # {12} mov [match_lens + 3*8], count3
+mov [rsp+56 + 4*8], r11                 # {12} mov [match_lens + 4*8], count4
+mov [rsp+56 + 5*8], r12                 # {12} mov [match_lens + 5*8], count5
+mov [rsp+56 + 6*8], r13                 # {12} mov [match_lens + 6*8], count6
+mov [rsp+56 + 7*8], r14                 # {12} mov [match_lens + 7*8], count7
+                                        # # Prefetch Dictionary
+                                        # {0} [5] # Make sure that all the prefetching will take place between VPCMPEQB and the next command
+                                        # {0} [0] REGISTER match_addr8, mask_eq_bits8, count8
+                                        # {0} [0] YMM_REGISTER mask_eq_bytes8
+mov r14, [rbx + r8 + 8*8]               # {0} [0] mov match_addr8, [hash_table + hash_row0 + 8*8]
+vpcmpeqb ymm8, ymm0, [rax + r14]        # {0} [9] vpcmpeqb mask_eq_bytes8, src_data, [dict + match_addr8]
+                                        # {0} [0] REGISTER match_addr9, mask_eq_bits9, count9
+                                        # {0} [0] YMM_REGISTER mask_eq_bytes9
+mov r14, [rbx + r8 + 9*8]               # {0} [0] mov match_addr9, [hash_table + hash_row0 + 9*8]
+vpcmpeqb ymm7, ymm0, [rax + r14]        # {0} [9] vpcmpeqb mask_eq_bytes9, src_data, [dict + match_addr9]
+                                        # {0} [0] REGISTER match_addr10, mask_eq_bits10, count10
+                                        # {0} [0] YMM_REGISTER mask_eq_bytes10
+mov r14, [rbx + r8 + 10*8]              # {0} [0] mov match_addr10, [hash_table + hash_row0 + 10*8]
+vpcmpeqb ymm6, ymm0, [rax + r14]        # {0} [9] vpcmpeqb mask_eq_bytes10, src_data, [dict + match_addr10]
+                                        # {0} [0] REGISTER match_addr11, mask_eq_bits11, count11
+                                        # {0} [0] YMM_REGISTER mask_eq_bytes11
+mov r14, [rbx + r8 + 11*8]              # {0} [0] mov match_addr11, [hash_table + hash_row0 + 11*8]
+vpcmpeqb ymm5, ymm0, [rax + r14]        # {0} [9] vpcmpeqb mask_eq_bytes11, src_data, [dict + match_addr11]
+                                        # {0} [0] REGISTER match_addr12, mask_eq_bits12, count12
+                                        # {0} [0] YMM_REGISTER mask_eq_bytes12
+mov r14, [rbx + r8 + 12*8]              # {0} [0] mov match_addr12, [hash_table + hash_row0 + 12*8]
+vpcmpeqb ymm4, ymm0, [rax + r14]        # {0} [9] vpcmpeqb mask_eq_bytes12, src_data, [dict + match_addr12]
+                                        # {0} [0] REGISTER match_addr13, mask_eq_bits13, count13
+                                        # {0} [0] YMM_REGISTER mask_eq_bytes13
+mov r14, [rbx + r8 + 13*8]              # {0} [0] mov match_addr13, [hash_table + hash_row0 + 13*8]
+vpcmpeqb ymm3, ymm0, [rax + r14]        # {0} [9] vpcmpeqb mask_eq_bytes13, src_data, [dict + match_addr13]
+                                        # {0} [0] REGISTER match_addr14, mask_eq_bits14, count14
+                                        # {0} [0] YMM_REGISTER mask_eq_bytes14
+mov r14, [rbx + r8 + 14*8]              # {0} [0] mov match_addr14, [hash_table + hash_row0 + 14*8]
+vpcmpeqb ymm2, ymm0, [rax + r14]        # {0} [9] vpcmpeqb mask_eq_bytes14, src_data, [dict + match_addr14]
+                                        # {0} [0] REGISTER match_addr15, mask_eq_bits15, count15
+                                        # {0} [0] YMM_REGISTER mask_eq_bytes15
+mov r8, [rbx + r8 + 15*8]               # {0} [0] mov match_addr15, [hash_table + hash_row0 + 15*8]
+vpcmpeqb ymm0, ymm0, [rax + r8]         # {0} [9] vpcmpeqb mask_eq_bytes15, src_data, [dict + match_addr15]
+                                        # {5} [0] REGISTER prefetch_addr8
+mov r8, [rbx + r9 + 8*8]                # {5} [0] mov prefetch_addr8, [hash_table + hash_row1 + 8*8]
+prefetch [rax + r8]                     # {5} [0] prefetch [dict + prefetch_addr8]
+prefetch [rax + r8 + 31]                # {5} [0] prefetch [dict + prefetch_addr8 + 31]
+                                        # {5} [0] REGISTER prefetch_addr9
+mov r8, [rbx + r9 + 9*8]                # {5} [0] mov prefetch_addr9, [hash_table + hash_row1 + 9*8]
+prefetch [rax + r8]                     # {5} [0] prefetch [dict + prefetch_addr9]
+prefetch [rax + r8 + 31]                # {5} [0] prefetch [dict + prefetch_addr9 + 31]
+                                        # {5} [0] REGISTER prefetch_addr10
+mov r8, [rbx + r9 + 10*8]               # {5} [0] mov prefetch_addr10, [hash_table + hash_row1 + 10*8]
+prefetch [rax + r8]                     # {5} [0] prefetch [dict + prefetch_addr10]
+prefetch [rax + r8 + 31]                # {5} [0] prefetch [dict + prefetch_addr10 + 31]
+                                        # {5} [0] REGISTER prefetch_addr11
+mov r8, [rbx + r9 + 11*8]               # {5} [0] mov prefetch_addr11, [hash_table + hash_row1 + 11*8]
+prefetch [rax + r8]                     # {5} [0] prefetch [dict + prefetch_addr11]
+prefetch [rax + r8 + 31]                # {5} [0] prefetch [dict + prefetch_addr11 + 31]
+                                        # {5} [0] REGISTER prefetch_addr12
+mov r8, [rbx + r9 + 12*8]               # {5} [0] mov prefetch_addr12, [hash_table + hash_row1 + 12*8]
+prefetch [rax + r8]                     # {5} [0] prefetch [dict + prefetch_addr12]
+prefetch [rax + r8 + 31]                # {5} [0] prefetch [dict + prefetch_addr12 + 31]
+                                        # {5} [0] REGISTER prefetch_addr13
+mov r8, [rbx + r9 + 13*8]               # {5} [0] mov prefetch_addr13, [hash_table + hash_row1 + 13*8]
+prefetch [rax + r8]                     # {5} [0] prefetch [dict + prefetch_addr13]
+prefetch [rax + r8 + 31]                # {5} [0] prefetch [dict + prefetch_addr13 + 31]
+                                        # {5} [0] REGISTER prefetch_addr14
+mov r8, [rbx + r9 + 14*8]               # {5} [0] mov prefetch_addr14, [hash_table + hash_row1 + 14*8]
+prefetch [rax + r8]                     # {5} [0] prefetch [dict + prefetch_addr14]
+prefetch [rax + r8 + 31]                # {5} [0] prefetch [dict + prefetch_addr14 + 31]
+                                        # {5} [0] REGISTER prefetch_addr15
+mov r9, [rbx + r9 + 15*8]               # {5} [0] mov prefetch_addr15, [hash_table + hash_row1 + 15*8]
+prefetch [rax + r9]                     # {5} [0] prefetch [dict + prefetch_addr15]
+prefetch [rax + r9 + 31]                # {5} [0] prefetch [dict + prefetch_addr15 + 31]
+                                        # {5} # Check matches
+vpmovmskb r9, ymm8                      # {9} vpmovmskb mask_eq_bits8, mask_eq_bytes8
+vpmovmskb r8, ymm7                      # {9} vpmovmskb mask_eq_bits9, mask_eq_bytes9
+vpmovmskb r14, ymm6                     # {9} vpmovmskb mask_eq_bits10, mask_eq_bytes10
+vpmovmskb r13, ymm5                     # {9} vpmovmskb mask_eq_bits11, mask_eq_bytes11
+vpmovmskb r12, ymm4                     # {9} vpmovmskb mask_eq_bits12, mask_eq_bytes12
+vpmovmskb r11, ymm3                     # {9} vpmovmskb mask_eq_bits13, mask_eq_bytes13
+vpmovmskb rsi, ymm2                     # {9} vpmovmskb mask_eq_bits14, mask_eq_bytes14
+vpmovmskb rdi, ymm0                     # {9} vpmovmskb mask_eq_bits15, mask_eq_bytes15
+not r9                                  # {10} not mask_eq_bits8
+not r8                                  # {10} not mask_eq_bits9
+not r14                                 # {10} not mask_eq_bits10
+not r13                                 # {10} not mask_eq_bits11
+not r12                                 # {10} not mask_eq_bits12
+not r11                                 # {10} not mask_eq_bits13
+not rsi                                 # {10} not mask_eq_bits14
+not rdi                                 # {10} not mask_eq_bits15
+tzcnt r9, r9                            # {11} tzcnt count8, mask_eq_bits8
+tzcnt r8, r8                            # {11} tzcnt count9, mask_eq_bits9
+tzcnt r14, r14                          # {11} tzcnt count10, mask_eq_bits10
+tzcnt r13, r13                          # {11} tzcnt count11, mask_eq_bits11
+tzcnt r12, r12                          # {11} tzcnt count12, mask_eq_bits12
+tzcnt r11, r11                          # {11} tzcnt count13, mask_eq_bits13
+tzcnt rsi, rsi                          # {11} tzcnt count14, mask_eq_bits14
+tzcnt rdi, rdi                          # {11} tzcnt count15, mask_eq_bits15
+mov [rsp+56 + 8*8], r9                  # {12} mov [match_lens + 8*8], count8
+mov [rsp+56 + 9*8], r8                  # {12} mov [match_lens + 9*8], count9
+mov [rsp+56 + 10*8], r14                # {12} mov [match_lens + 10*8], count10
+mov [rsp+56 + 11*8], r13                # {12} mov [match_lens + 11*8], count11
+mov [rsp+56 + 12*8], r12                # {12} mov [match_lens + 12*8], count12
+mov [rsp+56 + 13*8], r11                # {12} mov [match_lens + 13*8], count13
+mov [rsp+56 + 14*8], rsi                # {12} mov [match_lens + 14*8], count14
+mov [rsp+56 + 15*8], rdi                # {12} mov [match_lens + 15*8], count15
+
 jmp LOOP_START                          # jmp LOOP_START
-                                        #
-                                        #
+
+
                                         # # Make sure these vars are carried between the loop iterations
 xor rax, rax                            # xor dict, dict
 xor rdx, rdx                            # xor pos, pos

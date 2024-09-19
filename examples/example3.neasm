@@ -31,7 +31,7 @@ YMM_REGISTER src_data
 vmovdqu src_data, [dict + pos]
 
 %for i in range(0, ROWSIZE, LINE):
-    %# Prefetch Dictionary
+    # Prefetch Dictionary
     %for n in range(i, i+LINE):
         %start_new_stream()
         REGISTER prefetch_addr{n}
@@ -41,7 +41,7 @@ vmovdqu src_data, [dict + pos]
         prefetch [dict + prefetch_addr{n} + 31]
     %interleave_streams()
     %
-    %# Check matches
+    # Check matches
     %for n in range(i, i+LINE):
         %start_new_stream()
         REGISTER match_addr{n}, mask_eq_bits{n}, count{n}

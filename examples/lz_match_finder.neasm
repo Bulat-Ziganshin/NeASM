@@ -36,7 +36,7 @@ YMM_REGISTER src_data
 vmovdqu src_data, [dict + pos]
 
 %for i in range(0, ROWSIZE, LINE):
-    %# Prefetch Dictionary
+    # Prefetch Dictionary
     %start_new_stream()
     [5] # Make sure that all the prefetching will take place between VPCMPEQB and the next command
     %for n in range(i, i+LINE):
@@ -46,7 +46,7 @@ vmovdqu src_data, [dict + pos]
         [0] prefetch [dict + prefetch_addr{n}]
         [0] prefetch [dict + prefetch_addr{n} + 31]
     %
-    %# Check matches
+    # Check matches
     %for n in range(i, i+LINE):
         %start_new_stream()
         [0] REGISTER match_addr{n}, mask_eq_bits{n}, count{n}
